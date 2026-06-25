@@ -1,7 +1,52 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
+import { Platform } from 'react-native';
 import { useLanguage, Language } from './LanguageContext';
+
+// Conditionally import native-only modules
+let Speech: any = null;
+let Audio: any = null;
+try {
+  Speech = require('expo-speech');
+} catch (e) {
+  console.log('expo-speech not available');
+}
+try {
+  Audio = require('expo-av').Audio;
+} catch (e) {
+  console.log('expo-av not available');
+}
+
+// Web Audio API fallback for beep sounds
+const playWebBeep = (frequency = 800, duration = 150) => {
+  if (typeof window === 'undefined' || !window.AudioContext && !(window as any).webkitAudioContext) return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.frequency.value = frequency;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.3;
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + duration / 1000);
+  } catch (e) {
+    console.log('Web Audio beep failed:', e);
+  }
+};
+
+const webSpeak = (text: string, lang: string) => {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  try {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 1.0;
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.log('Web Speech failed:', e);
+  }
+};
 
 export interface Anomaly {
   id: string;
@@ -343,12 +388,17 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [isScanning, isPaused, scanTime]);
 
   const playSoundHelper = async (source: any) => {
+    if (Platform.OS === 'web') {
+      playWebBeep();
+      return;
+    }
     try {
+      if (!Audio) return;
       const { sound } = await Audio.Sound.createAsync(
         source,
         { shouldPlay: true }
       );
-      sound.setOnPlaybackStatusUpdate((status) => {
+      sound.setOnPlaybackStatusUpdate((status: any) => {
         if (status.isLoaded && status.didJustFinish) {
           sound.unloadAsync();
         }
@@ -378,7 +428,11 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const speakText = language === 'tr' 
         ? `Dikkat: Zemin altında ${materialName} yansıma karakteristiği algılandı.`
         : `Warning: Subsurface ${materialName} reflection signature detected.`;
-      Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+      if (Platform.OS === 'web') {
+        webSpeak(speakText, language === 'tr' ? 'tr-TR' : 'en-US');
+      } else if (Speech) {
+        Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+      }
     } else {
       if (alertType === 'beep') {
         playBeepSound();
@@ -536,14 +590,22 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         
         setTimeout(() => {
-          Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+          if (Platform.OS === 'web') {
+            webSpeak(speakText, language === 'tr' ? 'tr-TR' : 'en-US');
+          } else if (Speech) {
+            Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+          }
         }, 800);
       } else {
         const speakText = language === 'tr'
           ? 'Tarama tamamlandı. Herhangi bir zemin altı anomali tespit edilemedi.'
           : 'Scan complete. No subsurface anomalies detected.';
         setTimeout(() => {
-          Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+          if (Platform.OS === 'web') {
+            webSpeak(speakText, language === 'tr' ? 'tr-TR' : 'en-US');
+          } else if (Speech) {
+            Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+          }
         }, 800);
       }
     }

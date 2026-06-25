@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated, Easing, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated, Easing, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
@@ -34,7 +34,7 @@ export default function HomeScreen() {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
 
     // Pulse logo animation
@@ -43,12 +43,12 @@ export default function HomeScreen() {
         Animated.timing(pulseAnim, {
           toValue: 1.05,
           duration: 1200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(pulseAnim, {
           toValue: 0.95,
           duration: 1200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ])
     ).start();
@@ -59,7 +59,7 @@ export default function HomeScreen() {
         toValue: 1,
         duration: 3000,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: false,
       })
     ).start();
 
@@ -76,17 +76,20 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (diagnosticsStatus === 'completed' && !hasApprovedDiagnostics) {
-      Alert.alert(
-        language === 'tr' ? 'Teşhis Tamamlandı' : 'Diagnostics Completed',
-        language === 'tr' ? 'Donanım testi başarıyla tamamlandı. Cihaz çalışmaya hazır.' : 'Hardware diagnostics completed successfully. Unit ready for operation.',
-        [
-          {
-            text: language === 'tr' ? 'Onayla ve Devam Et' : 'Approve & Continue',
-            onPress: () => setHasApprovedDiagnostics(true)
-          }
-        ],
-        { cancelable: false }
-      );
+      const title = language === 'tr' ? 'Teşhis Tamamlandı' : 'Diagnostics Completed';
+      const msg = language === 'tr' ? 'Donanım testi başarıyla tamamlandı. Cihaz çalışmaya hazır.' : 'Hardware diagnostics completed successfully. Unit ready for operation.';
+      if (Platform.OS === 'web') {
+        window.alert(`${title}\n\n${msg}`);
+        setHasApprovedDiagnostics(true);
+      } else {
+        const { Alert } = require('react-native');
+        Alert.alert(
+          title,
+          msg,
+          [{ text: language === 'tr' ? 'Onayla ve Devam Et' : 'Approve & Continue', onPress: () => setHasApprovedDiagnostics(true) }],
+          { cancelable: false }
+        );
+      }
     }
   }, [diagnosticsStatus, hasApprovedDiagnostics, language]);
 
@@ -132,10 +135,8 @@ export default function HomeScreen() {
                 <Line x1="10" y1="50" x2="90" y2="50" stroke="#1F2937" strokeWidth="1" />
                 <Line x1="50" y1="10" x2="50" y2="90" stroke="#1F2937" strokeWidth="1" />
 
-                <Animated.View style={{ transform: [{ rotate: spin }], originX: '50px', originY: '50px' } as any}>
-                  <Line x1="50" y1="50" x2="50" y2="10" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
-                  <Circle cx="50" cy="20" r="3" fill="#10B981" />
-                </Animated.View>
+                <Line x1="50" y1="50" x2="50" y2="10" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+                <Circle cx="50" cy="20" r="3" fill="#10B981" />
                 
                 <Circle cx="50" cy="50" r="4" fill="#3B82F6" />
               </Svg>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Line } from 'react-native-svg';
 import { useLanguage } from '../../context/LanguageContext';
@@ -266,12 +266,22 @@ export default function LogsScreen() {
         locCode === 'documents' ? 'Documents/' :
         'InternalStorage/GPR-Logs/';
 
-      Alert.alert(
-        language === 'tr' ? 'Rapor Kaydedildi' : 'Report Exported',
-        language === 'tr' 
-          ? `Dosya başarıyla oluşturuldu ve ${locLabel} üzerine depolandı:\n\n${locPrefix}${filename}`
-          : `File successfully generated and stored on ${locLabel}:\n\n${locPrefix}${filename}`
-      );
+      if (Platform.OS === 'web') {
+        window.alert(
+          (language === 'tr' ? 'Rapor Kaydedildi' : 'Report Exported') + '\n\n' +
+          (language === 'tr' 
+            ? `Dosya başarıyla oluşturuldu ve ${locLabel} üzerine depolandı:\n\n${locPrefix}${filename}`
+            : `File successfully generated and stored on ${locLabel}:\n\n${locPrefix}${filename}`)
+        );
+      } else {
+        const { Alert } = require('react-native');
+        Alert.alert(
+          language === 'tr' ? 'Rapor Kaydedildi' : 'Report Exported',
+          language === 'tr' 
+            ? `Dosya başarıyla oluşturuldu ve ${locLabel} üzerine depolandı:\n\n${locPrefix}${filename}`
+            : `File successfully generated and stored on ${locLabel}:\n\n${locPrefix}${filename}`
+        );
+      }
     } catch (e) {
       console.log(e);
     } finally {

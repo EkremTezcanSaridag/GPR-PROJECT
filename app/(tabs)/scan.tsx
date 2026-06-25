@@ -317,13 +317,13 @@ export default function ScanScreen() {
       Animated.timing(drawerSlideAnim, {
         toValue: 0,
         duration: 250,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     } else {
       Animated.timing(drawerSlideAnim, {
         toValue: 350,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     }
   }, [activeDrawer]);
