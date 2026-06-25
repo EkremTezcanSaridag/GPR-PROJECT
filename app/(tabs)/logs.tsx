@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
+import Svg, { Path, Circle, G, Line } from 'react-native-svg';
 import { useLanguage } from '../../context/LanguageContext';
 import { useGpr, ScanLog } from '../../context/GprContext';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function LogsScreen() {
   const { t, language } = useLanguage();
   const { theme, logs, exportReport } = useGpr();
 
-  // Active view tab: 'list' | 'timeline' | 'map'
-  const [activeView, setActiveView] = useState<'list' | 'timeline' | 'map'>('list');
+  // Active view tab for the right column: 'map' | 'timeline'
+  const [activeSideView, setActiveSideView] = useState<'map' | 'timeline'>('map');
   const [filterMaterial, setFilterMaterial] = useState<string>('');
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'png' | null>(null);
@@ -22,41 +24,139 @@ export default function LogsScreen() {
     container: {
       flex: 1,
       backgroundColor: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#111827',
+      paddingLeft: 75, // Shift content right to clear Left Sidebar
+      flexDirection: 'row', // Split screen columns
+    },
+    // Left Column (Logs list and filters) - 40% width
+    leftColumn: {
+      flex: 0.42,
+      padding: 16,
+      borderRightWidth: 1,
+      borderRightColor: isLight ? '#E2E8F0' : '#374151',
+    },
+    // Right Column (Map, Timeline) - 58% width
+    rightColumn: {
+      flex: 0.58,
+      padding: 16,
     },
     filterBar: {
       backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
-      padding: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: isLight ? '#E2E8F0' : '#374151',
+      padding: 8,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: isLight ? '#E2E8F0' : '#374151',
       flexDirection: 'row',
       alignItems: 'center',
+      marginBottom: 16,
     },
     searchInputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
-      borderRadius: 8,
-      paddingHorizontal: 10,
+      borderRadius: 6,
+      paddingHorizontal: 8,
       flex: 1,
-      marginRight: 10,
-      height: 38,
+      height: 32,
     },
     searchInput: {
-      fontSize: 13,
+      fontSize: 12,
       color: isLight ? '#0F172A' : '#F9FAFB',
-      marginLeft: 6,
+      marginLeft: 4,
       flex: 1,
     },
-    // View selectors
+    // Log items
+    logCard: {
+      backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: isLight ? '#E2E8F0' : '#374151',
+    },
+    logHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: isLight ? '#F1F5F9' : '#2D3748',
+      paddingBottom: 6,
+      marginBottom: 8,
+    },
+    logId: {
+      fontSize: 13,
+      fontWeight: '800',
+      color: isLight ? '#0F172A' : '#F9FAFB',
+    },
+    logDate: {
+      fontSize: 11,
+      color: isLight ? '#64748B' : '#9CA3AF',
+    },
+    logRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginVertical: 2,
+    },
+    logLabel: {
+      fontSize: 11,
+      color: isLight ? '#64748B' : '#9CA3AF',
+    },
+    logValue: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: isLight ? '#0F172A' : '#E5E7EB',
+      textAlign: 'right',
+    },
+    anomBadge: {
+      backgroundColor: '#EFF6FF',
+      borderRadius: 4,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      marginHorizontal: 1,
+      borderWidth: 0.5,
+      borderColor: '#BFDBFE',
+    },
+    anomBadgeText: {
+      fontSize: 9,
+      fontWeight: '600',
+      color: '#1E40AF',
+    },
+    exportRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: isLight ? '#F1F5F9' : '#2D3748',
+      paddingTop: 8,
+    },
+    exportBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: 5,
+      backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
+      marginLeft: 6,
+    },
+    exportBtnText: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: isLight ? '#475569' : '#E2E8F0',
+      marginLeft: 2,
+    },
+    // Toggle sub views
     viewToggleGroup: {
       flexDirection: 'row',
-      backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
+      backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
       borderRadius: 8,
       padding: 3,
+      borderWidth: 1,
+      borderColor: isLight ? '#E2E8F0' : '#374151',
+      marginBottom: 16,
     },
     viewToggleBtn: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
       borderRadius: 6,
     },
     viewToggleBtnActive: {
@@ -70,102 +170,34 @@ export default function LogsScreen() {
     viewToggleTextActive: {
       color: '#FFFFFF',
     },
-    // Scroll content
-    scrollContent: {
-      padding: 16,
-    },
-    // Log items
-    logCard: {
+    // Visualizations on the right column
+    rightPanelCard: {
       backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 16,
+      borderRadius: 14,
+      padding: 12,
       borderWidth: 1,
       borderColor: isLight ? '#E2E8F0' : '#374151',
+      flex: 1,
     },
-    logHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+    // Map View
+    mapContainer: {
+      flex: 1,
+      justifyContent: 'center',
       alignItems: 'center',
-      borderBottomWidth: 1,
-      borderBottomColor: isLight ? '#F1F5F9' : '#2D3748',
-      paddingBottom: 8,
-      marginBottom: 10,
-    },
-    logId: {
-      fontSize: 14,
-      fontWeight: '800',
-      color: isLight ? '#0F172A' : '#F9FAFB',
-    },
-    logDate: {
-      fontSize: 12,
-      color: isLight ? '#64748B' : '#9CA3AF',
-    },
-    logRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginVertical: 4,
-    },
-    logLabel: {
-      fontSize: 12,
-      color: isLight ? '#64748B' : '#9CA3AF',
-    },
-    logValue: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: isLight ? '#0F172A' : '#E5E7EB',
-      textAlign: 'right',
-    },
-    anomBadge: {
-      backgroundColor: '#EFF6FF',
-      borderRadius: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      marginHorizontal: 2,
-      borderWidth: 0.5,
-      borderColor: '#BFDBFE',
-    },
-    anomBadgeText: {
-      fontSize: 10,
-      fontWeight: '600',
-      color: '#1E40AF',
-    },
-    exportRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: 12,
-      borderTopWidth: 1,
-      borderTopColor: isLight ? '#F1F5F9' : '#2D3748',
-      paddingTop: 10,
-    },
-    exportBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 8,
-      paddingVertical: 5,
-      borderRadius: 6,
-      backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
-      marginLeft: 8,
-    },
-    exportBtnText: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: isLight ? '#475569' : '#E2E8F0',
-      marginLeft: 4,
     },
     // Timeline Card
     timelineCard: {
       flexDirection: 'row',
-      marginBottom: 16,
+      marginBottom: 10,
     },
     timelineLineContainer: {
-      width: 24,
+      width: 20,
       alignItems: 'center',
     },
     timelineDot: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
       backgroundColor: '#3B82F6',
       marginTop: 6,
     },
@@ -174,24 +206,13 @@ export default function LogsScreen() {
       width: 2,
       backgroundColor: isLight ? '#E2E8F0' : '#374151',
     },
-    // Map Card
-    mapCard: {
-      backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
-      borderRadius: 14,
-      padding: 12,
-      borderWidth: 1,
-      borderColor: isLight ? '#E2E8F0' : '#374151',
-      height: 380,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     // Export Indicator Modal
     exportingContainer: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(0,0,0,0.5)',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 100,
+      zIndex: 1000,
     },
     exportingBox: {
       width: 220,
@@ -236,49 +257,11 @@ export default function LogsScreen() {
     );
   });
 
+  // Calculate SVG dimensions dynamically for the right map viewport
+  const mapSvgWidth = SCREEN_WIDTH * 0.58 - 56;
+
   return (
     <View style={styles.container}>
-      {/* Top Filter and view options row */}
-      <View style={styles.filterBar}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={16} color={isLight ? '#64748B' : '#9CA3AF'} />
-          <TextInput
-            placeholder={language === 'tr' ? 'Malzeme aratın...' : 'Search material...'}
-            placeholderTextColor={isLight ? '#94A3B8' : '#64748B'}
-            style={styles.searchInput}
-            value={filterMaterial}
-            onChangeText={setFilterMaterial}
-          />
-        </View>
-
-        <View style={styles.viewToggleGroup}>
-          <TouchableOpacity 
-            style={[styles.viewToggleBtn, activeView === 'list' && styles.viewToggleBtnActive]}
-            onPress={() => setActiveView('list')}
-          >
-            <Text style={[styles.viewToggleText, activeView === 'list' && styles.viewToggleTextActive]}>
-              {language === 'tr' ? 'Liste' : 'List'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.viewToggleBtn, activeView === 'timeline' && styles.viewToggleBtnActive]}
-            onPress={() => setActiveView('timeline')}
-          >
-            <Text style={[styles.viewToggleText, activeView === 'timeline' && styles.viewToggleTextActive]}>
-              Timeline
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.viewToggleBtn, activeView === 'map' && styles.viewToggleBtnActive]}
-            onPress={() => setActiveView('map')}
-          >
-            <Text style={[styles.viewToggleText, activeView === 'map' && styles.viewToggleTextActive]}>
-              {language === 'tr' ? 'Harita' : 'Map'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {/* Export Loader Overlay */}
       {exportingId !== null && (
         <View style={styles.exportingContainer}>
@@ -293,14 +276,27 @@ export default function LogsScreen() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* View 1: List View */}
-        {activeView === 'list' && (
-          filteredLogs.length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-              <Ionicons name="folder-open-outline" size={48} color={isLight ? '#94A3B8' : '#475569'} />
-              <Text style={[styles.logLabel, { marginTop: 12 }]}>
-                {language === 'tr' ? 'Aranan kriterlere uygun kayıt bulunamadı.' : 'No records found matching filters.'}
+      {/* 1. LEFT COLUMN: Logs scroll list */}
+      <View style={styles.leftColumn}>
+        <View style={styles.filterBar}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={14} color={isLight ? '#64748B' : '#9CA3AF'} />
+            <TextInput
+              placeholder={language === 'tr' ? 'Malzeme aratın...' : 'Search material...'}
+              placeholderTextColor={isLight ? '#94A3B8' : '#64748B'}
+              style={styles.searchInput}
+              value={filterMaterial}
+              onChangeText={setFilterMaterial}
+            />
+          </View>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {filteredLogs.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Ionicons name="folder-open-outline" size={32} color={isLight ? '#94A3B8' : '#475569'} />
+              <Text style={[styles.logLabel, { marginTop: 8 }]}>
+                {language === 'tr' ? 'Kayıt bulunamadı.' : 'No records found.'}
               </Text>
             </View>
           ) : (
@@ -324,12 +320,8 @@ export default function LogsScreen() {
                   <Text style={styles.logValue}>{log.duration} s</Text>
                 </View>
                 <View style={styles.logRow}>
-                  <Text style={styles.logLabel}>{t.estimatedDepth}</Text>
-                  <Text style={styles.logValue}>{log.maxDepth.toFixed(1)} m</Text>
-                </View>
-                <View style={styles.logRow}>
                   <Text style={styles.logLabel}>{t.results}</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 180 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 120 }}>
                     {log.anomalies.map((anom, idx) => (
                       <View key={idx} style={styles.anomBadge}>
                         <Text style={styles.anomBadgeText}>{anom}</Text>
@@ -341,97 +333,138 @@ export default function LogsScreen() {
                 {/* Export Buttons */}
                 <View style={styles.exportRow}>
                   <TouchableOpacity style={styles.exportBtn} onPress={() => handleExport('pdf', log.id)}>
-                    <Ionicons name="document-text" size={12} color={isLight ? '#475569' : '#E2E8F0'} />
+                    <Ionicons name="document-text" size={10} color={isLight ? '#475569' : '#E2E8F0'} />
                     <Text style={styles.exportBtnText}>PDF</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.exportBtn} onPress={() => handleExport('csv', log.id)}>
-                    <Ionicons name="grid" size={12} color={isLight ? '#475569' : '#E2E8F0'} />
+                    <Ionicons name="grid" size={10} color={isLight ? '#475569' : '#E2E8F0'} />
                     <Text style={styles.exportBtnText}>CSV</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.exportBtn} onPress={() => handleExport('png', log.id)}>
-                    <Ionicons name="image" size={12} color={isLight ? '#475569' : '#E2E8F0'} />
+                    <Ionicons name="image" size={10} color={isLight ? '#475569' : '#E2E8F0'} />
                     <Text style={styles.exportBtnText}>PNG</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ))
-          )
-        )}
+          )}
+        </ScrollView>
+      </View>
 
-        {/* View 2: Timeline View */}
-        {activeView === 'timeline' && (
-          filteredLogs.map((log, index) => (
-            <View key={log.id} style={styles.timelineCard}>
-              <View style={styles.timelineLineContainer}>
-                <View style={styles.timelineDot} />
-                {index < filteredLogs.length - 1 && <View style={styles.timelineLine} />}
-              </View>
-              <View style={[styles.logCard, { flex: 1, marginBottom: 0 }]}>
-                <View style={styles.logHeader}>
-                  <Text style={styles.logId}>{log.date}</Text>
-                  <Text style={styles.logDate}>{log.time}</Text>
-                </View>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#3B82F6', marginBottom: 6 }}>{log.id} | {log.operator}</Text>
-                <Text style={[styles.logLabel, { fontSize: 11 }]}>{t.results}: {log.anomalies.join(', ')}</Text>
-              </View>
-            </View>
-          ))
-        )}
+      {/* 2. RIGHT COLUMN: Visualizations (Map and Timeline) */}
+      <View style={styles.rightColumn}>
+        
+        {/* Toggle Right Sub-View (Map or Timeline) */}
+        <View style={styles.viewToggleGroup}>
+          <TouchableOpacity 
+            style={[styles.viewToggleBtn, activeSideView === 'map' && styles.viewToggleBtnActive]}
+            onPress={() => setActiveSideView('map')}
+          >
+            <Text style={[styles.viewToggleText, activeSideView === 'map' && styles.viewToggleTextActive]}>
+              {language === 'tr' ? 'Harita Kapsama Raporu' : 'GPS Coverage Map'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.viewToggleBtn, activeSideView === 'timeline' && styles.viewToggleBtnActive]}
+            onPress={() => setActiveSideView('timeline')}
+          >
+            <Text style={[styles.viewToggleText, activeSideView === 'timeline' && styles.viewToggleTextActive]}>
+              {language === 'tr' ? 'Zaman Akışı' : 'Timeline View'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* View 3: Map View (Visual Mock GPR grid path map overlay) */}
-        {activeView === 'map' && (
-          <View style={styles.mapCard}>
-            <Text style={[styles.panelTitle, { position: 'absolute', top: 12, left: 12 }]}>{t.scanCoverageMap}</Text>
-            
-            {/* SVG Draw Map Grid and Route lines */}
-            <Svg width="100%" height="320" style={{ marginTop: 24 }}>
-              {/* Background Grid */}
-              <Path d="M 0 40 L 400 40 M 0 80 L 400 80 M 0 120 L 400 120 M 0 160 L 400 160 M 0 200 L 400 200 M 0 240 L 400 240 M 0 280 L 400 280" stroke={theme === 'light' ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
-              <Path d="M 40 0 L 40 320 M 80 0 L 80 320 M 120 0 L 120 320 M 160 0 L 160 320 M 200 0 L 200 320 M 240 0 L 240 320 M 280 0 L 280 320 M 320 0 L 320 320 M 360 0 L 360 320" stroke={theme === 'light' ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+        {/* Dynamic Display Panels */}
+        <View style={styles.rightPanelCard}>
+          {activeSideView === 'map' ? (
+            <View style={styles.mapContainer}>
+              <Text style={[styles.logId, { alignSelf: 'flex-start', marginBottom: 4 }]}>{t.scanCoverageMap}</Text>
               
-              {/* Scan paths */}
-              <Path 
-                d="M 50 250 L 150 220 L 250 260 L 320 180 L 280 100 L 180 80 L 100 140" 
-                fill="none" 
-                stroke="#3B82F6" 
-                strokeWidth="4" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              />
-
-              {/* Scan Area Cover Heatmap Overlay polygon */}
-              <Path 
-                d="M 120 200 L 280 240 L 330 150 L 250 80 L 90 120 Z" 
-                fill="#22C55E" 
-                opacity="0.15" 
-                stroke="#22C55E" 
-                strokeWidth="1.5" 
-                strokeDasharray="4 4" 
-              />
-
-              {/* Waypoint circle markers representing detections */}
-              <G>
-                {/* Gold waypoint */}
-                <Circle cx="150" cy="220" r="10" fill="#EF4444" opacity="0.3" />
-                <Circle cx="150" cy="220" r="4" fill="#EF4444" />
+              {/* GPS RTK Coverage Grid overlay */}
+              <Svg width="100%" height="90%">
+                {/* Coordinates grids */}
+                <Line x1="0" y1="40" x2={mapSvgWidth} y2="40" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="0" y1="85" x2={mapSvgWidth} y2="85" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="0" y1="130" x2={mapSvgWidth} y2="130" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="0" y1="175" x2={mapSvgWidth} y2="175" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="0" y1="220" x2={mapSvgWidth} y2="220" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
                 
-                {/* Pipe waypoint */}
-                <Circle cx="280" cy="100" r="10" fill="#3B82F6" opacity="0.3" />
-                <Circle cx="280" cy="100" r="4" fill="#3B82F6" />
+                {/* Vertical Lines */}
+                <Line x1="50" y1="0" x2="50" y2="250" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="100" y1="0" x2="100" y2="250" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="150" y1="0" x2="150" y2="250" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="200" y1="0" x2="200" y2="250" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="250" y1="0" x2="250" y2="250" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
+                <Line x1="300" y1="0" x2="300" y2="250" stroke={isLight ? '#E2E8F0' : '#1F2937'} strokeWidth="1" />
 
-                {/* Cavity waypoint */}
-                <Circle cx="100" cy="140" r="10" fill="#F59E0B" opacity="0.3" />
-                <Circle cx="100" cy="140" r="4" fill="#F59E0B" />
-              </G>
-            </Svg>
+                {/* Scan paths */}
+                <Path 
+                  d="M 50 180 L 120 150 L 220 190 L 280 130 L 240 80 L 150 60 L 80 100" 
+                  fill="none" 
+                  stroke="#3B82F6" 
+                  strokeWidth="3.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                />
 
-            <View style={{ position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="pin" size={14} color="#EF4444" />
-              <Text style={[styles.timerLabel, { marginLeft: 4, fontWeight: '700' }]}>GPS LOCK: 3D POS (RTK ACTIVE)</Text>
+                {/* Cover Heatmap overlay */}
+                <Path 
+                  d="M 90 140 L 250 170 L 290 110 L 220 60 L 70 90 Z" 
+                  fill="#22C55E" 
+                  opacity="0.15" 
+                  stroke="#22C55E" 
+                  strokeWidth="1" 
+                  strokeDasharray="4 4" 
+                />
+
+                {/* Waypoints */}
+                <G>
+                  <Circle cx="120" cy="150" r="8" fill="#EF4444" opacity="0.35" />
+                  <Circle cx="120" cy="150" r="3" fill="#EF4444" />
+                  
+                  <Circle cx="240" cy="80" r="8" fill="#3B82F6" opacity="0.35" />
+                  <Circle cx="240" cy="80" r="3" fill="#3B82F6" />
+
+                  <Circle cx="80" cy="100" r="8" fill="#F59E0B" opacity="0.35" />
+                  <Circle cx="80" cy="100" r="3" fill="#F59E0B" />
+                </G>
+              </Svg>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, alignSelf: 'flex-end' }}>
+                <Ionicons name="pin" size={12} color="#EF4444" />
+                <Text style={[styles.logLabel, { fontSize: 9, fontWeight: '700', marginLeft: 2 }]}>
+                  RTK GPS: FIXED (PASS PATH STABILITY LOCK)
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-      </ScrollView>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={[styles.logId, { marginBottom: 12 }]}>{language === 'tr' ? 'Kronolojik Kayıt Akışı' : 'Timeline Scan Stream'}</Text>
+              {filteredLogs.map((log, index) => (
+                <View key={log.id} style={styles.timelineCard}>
+                  <View style={styles.timelineLineContainer}>
+                    <View style={styles.timelineDot} />
+                    {index < filteredLogs.length - 1 && <View style={styles.timelineLine} />}
+                  </View>
+                  <View style={[styles.logCard, { flex: 1, marginBottom: 0, paddingVertical: 10 }]}>
+                    <View style={styles.logHeader}>
+                      <Text style={styles.logId}>{log.date}</Text>
+                      <Text style={styles.logDate}>{log.time}</Text>
+                    </View>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#3B82F6', marginBottom: 4 }}>
+                      {log.id} | Operatör: {log.operator}
+                    </Text>
+                    <Text style={[styles.logLabel, { fontSize: 10.5 }]}>
+                      {t.results}: {log.anomalies.join(', ')} (Max Derinlik: {log.maxDepth.toFixed(1)} m)
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+      </View>
     </View>
   );
 }

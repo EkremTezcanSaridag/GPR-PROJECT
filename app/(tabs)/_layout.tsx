@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../../context/LanguageContext';
 import { useGpr } from '../../context/GprContext';
@@ -15,16 +16,14 @@ export default function TabLayout() {
           bg: '#1E293B',
           active: '#60A5FA',
           inactive: '#64748B',
-          headerBg: '#0F172A',
-          headerText: '#F8FAFC',
+          border: '#334155',
         };
       case 'light':
         return {
           bg: '#FFFFFF',
           active: '#3B82F6',
           inactive: '#64748B',
-          headerBg: '#F8FAFC',
-          headerText: '#0F172A',
+          border: '#E2E8F0',
         };
       case 'industrial':
       default:
@@ -32,92 +31,183 @@ export default function TabLayout() {
           bg: '#111827',
           active: '#3B82F6',
           inactive: '#9CA3AF',
-          headerBg: '#1F2937',
-          headerText: '#F3F4F6',
+          border: '#374151',
         };
     }
   };
 
   const colors = getThemeColors();
 
+  // Custom Left Sidebar component
+  const CustomSideBar = ({ state, descriptors, navigation }: any) => {
+    return (
+      <View style={[styles.sidebar, { backgroundColor: colors.bg, borderRightColor: colors.border }]}>
+        {/* Top Logo */}
+        <View style={styles.logoBox}>
+          <Ionicons name="scan-circle" size={32} color="#06B6D4" />
+          <Text style={styles.logoText}>GPR</Text>
+        </View>
+
+        {/* Tab Items */}
+        <View style={styles.tabItemsContainer}>
+          {state.routes.map((route: any, index: number) => {
+            const { options } = descriptors[route.key];
+            const isFocused = state.index === index;
+
+            const onPress = () => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
+
+            // Custom Icon selector
+            const getIcon = (routeName: string, color: string) => {
+              switch (routeName) {
+                case 'index':
+                  return <Ionicons name="home" size={20} color={color} />;
+                case 'scan':
+                  return <Ionicons name="pulse" size={20} color={color} />;
+                case 'material':
+                  return <Ionicons name="flask" size={20} color={color} />;
+                case 'logs':
+                  return <Ionicons name="folder-open" size={20} color={color} />;
+                case 'settings':
+                  return <Ionicons name="settings" size={20} color={color} />;
+                default:
+                  return <Ionicons name="ellipse" size={20} color={color} />;
+              }
+            };
+
+            const getLabel = (routeName: string) => {
+              switch (routeName) {
+                case 'index':
+                  return language === 'tr' ? 'Ana Sayfa' : language === 'de' ? 'Start' : language === 'fr' ? 'Accueil' : language === 'ru' ? 'Главная' : language === 'ar' ? 'الرئيسية' : 'Home';
+                case 'scan':
+                  return language === 'tr' ? 'Canlı Tarama' : language === 'de' ? 'Live-Scan' : language === 'fr' ? 'Scan' : language === 'ru' ? 'Сканирование' : language === 'ar' ? 'مسح' : 'Live Scan';
+                case 'material':
+                  return language === 'tr' ? 'Madde' : language === 'de' ? 'Material' : language === 'fr' ? 'Matière' : language === 'ru' ? 'Анализ' : language === 'ar' ? 'تحليل' : 'Analysis';
+                case 'logs':
+                  return language === 'tr' ? 'Kayıtlar' : language === 'de' ? 'Protokoll' : language === 'fr' ? 'Registres' : language === 'ru' ? 'Журнал' : language === 'ar' ? 'السجلات' : 'Logs';
+                case 'settings':
+                  return language === 'tr' ? 'Ayarlar' : language === 'de' ? 'Optionen' : language === 'fr' ? 'Ajustements' : language === 'ru' ? 'Настройки' : language === 'ar' ? 'إعدادات' : 'Settings';
+                default:
+                  return '';
+              }
+            };
+
+            return (
+              <TouchableOpacity
+                key={route.key}
+                onPress={onPress}
+                style={[
+                  styles.tabItem,
+                  isFocused && { backgroundColor: theme === 'light' ? '#EFF6FF' : '#1E293B' }
+                ]}
+              >
+                {/* Active Indicator Bar on the left */}
+                {isFocused && <View style={[styles.activeIndicator, { backgroundColor: colors.active }]} />}
+                
+                {getIcon(route.name, isFocused ? colors.active : colors.inactive)}
+                <Text 
+                  style={[
+                    styles.tabLabel, 
+                    { color: isFocused ? colors.active : colors.inactive }
+                  ]}
+                  numberOfLines={1}
+                >
+                  {getLabel(route.name)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Bottom Status */}
+        <View style={styles.bottomStatus}>
+          <Ionicons name="battery-charging" size={16} color="#22C55E" />
+        </View>
+      </View>
+    );
+  };
+
   return (
     <Tabs
+      tabBar={(props) => <CustomSideBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.active,
-        tabBarInactiveTintColor: colors.inactive,
-        tabBarStyle: {
-          backgroundColor: colors.bg,
-          borderTopWidth: 1,
-          borderTopColor: theme === 'light' ? '#E2E8F0' : '#374151',
-          paddingBottom: 6,
-          paddingTop: 6,
-          height: 60,
-        },
-        headerStyle: {
-          backgroundColor: colors.headerBg,
-          borderBottomWidth: 1,
-          borderBottomColor: theme === 'light' ? '#E2E8F0' : '#374151',
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: colors.headerText,
-        headerTitleStyle: {
-          fontWeight: '700',
-          fontSize: 18,
-          letterSpacing: 0.5,
-        },
+        headerShown: false,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t.statusReady,
-          tabBarLabel: language === 'tr' ? 'Ana Sayfa' : language === 'de' ? 'Startseite' : language === 'fr' ? 'Accueil' : language === 'ru' ? 'Главная' : language === 'ar' ? 'الرئيسية' : 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="scan"
-        options={{
-          title: t.card1Title,
-          tabBarLabel: language === 'tr' ? 'Canlı Tarama' : language === 'de' ? 'Live-Scan' : language === 'fr' ? 'Scan Direct' : language === 'ru' ? 'Сканирование' : language === 'ar' ? 'مسح مباشر' : 'Live Scan',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pulse-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="material"
-        options={{
-          title: t.card2Title,
-          tabBarLabel: language === 'tr' ? 'Madde Analizi' : language === 'de' ? 'Materialanalyse' : language === 'fr' ? 'Analyse' : language === 'ru' ? 'Анализ' : language === 'ar' ? 'تحليل المواد' : 'Analysis',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="flask-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="logs"
-        options={{
-          title: t.card3Title,
-          tabBarLabel: language === 'tr' ? 'Kayıtlar' : language === 'de' ? 'Protokolle' : language === 'fr' ? 'Registres' : language === 'ru' ? 'Журнал' : language === 'ar' ? 'السجلات' : 'Logs',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="folder-open-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t.settingsTitle,
-          tabBarLabel: language === 'tr' ? 'Ayarlar' : language === 'de' ? 'Einstellungen' : language === 'fr' ? 'Paramètres' : language === 'ru' ? 'Настройки' : language === 'ar' ? 'الإعدادات' : 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="scan" />
+      <Tabs.Screen name="material" />
+      <Tabs.Screen name="logs" />
+      <Tabs.Screen name="settings" />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  sidebar: {
+    width: 75,
+    height: '100%',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRightWidth: 1,
+    zIndex: 1000,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  logoBox: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#06B6D4',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  tabItemsContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  tabItem: {
+    width: '100%',
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+    position: 'relative',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3.5,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  tabLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  bottomStatus: {
+    alignItems: 'center',
+    marginTop: 20,
+  }
+});

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Line, Rect, Circle, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Line } from 'react-native-svg';
 import { useLanguage } from '../../context/LanguageContext';
 import { useGpr } from '../../context/GprContext';
 
@@ -27,35 +27,46 @@ export default function MaterialScreen() {
     container: {
       flex: 1,
       backgroundColor: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#111827',
+      paddingLeft: 75, // Shift content right to clear Left Sidebar
+      flexDirection: 'row', // Split screen columns
     },
-    scrollContent: {
+    // Left Column (Selection, Predictions, AI explanations) - 40% width
+    leftColumn: {
+      flex: 0.4,
+      padding: 16,
+      borderRightWidth: 1,
+      borderRightColor: isLight ? '#E2E8F0' : '#374151',
+    },
+    // Right Column (Oscilloscopes & Charts) - 60% width
+    rightColumn: {
+      flex: 0.6,
       padding: 16,
     },
     panelCard: {
       backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
-      borderRadius: 14,
-      padding: 18,
-      marginBottom: 16,
+      borderRadius: 12,
+      padding: 14,
       borderWidth: 1,
       borderColor: isLight ? '#E2E8F0' : '#374151',
+      marginBottom: 16,
     },
     panelTitle: {
-      fontSize: 15,
+      fontSize: 13,
       fontWeight: '700',
       color: isLight ? '#0F172A' : '#F9FAFB',
-      marginBottom: 12,
+      marginBottom: 10,
       letterSpacing: 0.3,
     },
     // Selector row
     selectorScroll: {
-      marginBottom: 16,
+      marginBottom: 12,
     },
     materialBtn: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
       backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
-      marginRight: 8,
+      marginRight: 6,
       borderWidth: 1,
       borderColor: isLight ? '#E2E8F0' : '#3A475C',
     },
@@ -64,124 +75,123 @@ export default function MaterialScreen() {
       borderColor: '#10B981',
     },
     materialBtnText: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: isLight ? '#475569' : '#E2E8F0',
     },
     materialBtnTextActive: {
       color: '#FFFFFF',
     },
-    // Prediction Dashboard Card
-    predictCard: {
+    // Prediction results
+    predictRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       backgroundColor: isLight ? '#ECFDF5' : '#064E3B',
       borderWidth: 1,
       borderColor: isLight ? '#A7F3D0' : '#047857',
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 16,
+      padding: 12,
+      borderRadius: 10,
+      marginBottom: 12,
     },
     predictInfo: {
       flex: 1,
     },
     predictLabel: {
-      fontSize: 11,
+      fontSize: 10,
       fontWeight: '600',
       color: isLight ? '#047857' : '#A7F3D0',
       textTransform: 'uppercase',
     },
     predictVal: {
-      fontSize: 20,
-      fontWeight: '800',
+      fontSize: 18,
+      fontWeight: '850',
       color: isLight ? '#065F46' : '#FFFFFF',
       marginTop: 2,
     },
     confidenceGauge: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      borderWidth: 6,
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      borderWidth: 5,
       borderColor: isLight ? '#A7F3D0' : '#047857',
       alignItems: 'center',
       justifyContent: 'center',
     },
     confidenceVal: {
-      fontSize: 16,
+      fontSize: 13,
       fontWeight: '800',
       color: isLight ? '#065F46' : '#FFFFFF',
     },
-    // Graphs
+    // Waveform and Similarity
     graphTitle: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '600',
       color: isLight ? '#64748B' : '#9CA3AF',
-      marginBottom: 8,
+      marginBottom: 4,
     },
     graphContainer: {
-      height: 110,
+      height: 90,
       backgroundColor: '#090D16',
       borderRadius: 8,
       overflow: 'hidden',
       padding: 4,
-      marginBottom: 14,
+      marginBottom: 10,
     },
-    // Similarity Bars
+    // Similarity Rows
     simRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: 6,
+      marginVertical: 4,
     },
     simName: {
-      width: 80,
-      fontSize: 12,
+      width: 72,
+      fontSize: 11,
       fontWeight: '600',
       color: isLight ? '#475569' : '#E2E8F0',
     },
     simBarOuter: {
       flex: 1,
-      height: 10,
+      height: 8,
       backgroundColor: isLight ? '#E2E8F0' : '#2D3748',
-      borderRadius: 5,
-      marginHorizontal: 8,
+      borderRadius: 4,
+      marginHorizontal: 6,
       overflow: 'hidden',
     },
     simBarInner: {
       height: '100%',
       backgroundColor: '#10B981',
-      borderRadius: 5,
+      borderRadius: 4,
     },
     simVal: {
-      width: 32,
-      fontSize: 12,
+      width: 28,
+      fontSize: 11,
       fontWeight: '700',
       color: isLight ? '#0F172A' : '#F9FAFB',
       textAlign: 'right',
     },
-    // AI Explanation Box
+    // AI Explanation box
     aiBox: {
       backgroundColor: isLight ? '#F0FDFA' : '#112228',
       borderRadius: 10,
-      padding: 14,
+      padding: 10,
       borderWidth: 1,
       borderColor: isLight ? '#CCFBF1' : '#0D5F54',
-      marginTop: 8,
     },
     aiHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 6,
+      marginBottom: 4,
     },
     aiTitle: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '700',
       color: isLight ? '#0F766E' : '#2DD4BF',
       marginLeft: 6,
     },
     aiContent: {
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: 11,
+      lineHeight: 16,
       color: isLight ? '#115E59' : '#99F6E4',
       fontStyle: 'italic',
     }
@@ -214,9 +224,13 @@ export default function MaterialScreen() {
     return found ? found.name : t.unknownObj;
   };
 
+  // Determine width of graphs in the right column
+  const rightColumnGraphWidth = SCREEN_WIDTH * 0.6 - 68;
+
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* 1. LEFT COLUMN: Selector, Predict, Explanation */}
+      <View style={styles.leftColumn}>
         
         {/* Horizontal Material Selector scroll row */}
         <ScrollView 
@@ -236,18 +250,32 @@ export default function MaterialScreen() {
         </ScrollView>
 
         {/* Prediction Results Gauge */}
-        <View style={styles.predictCard}>
+        <View style={styles.predictRow}>
           <View style={styles.predictInfo}>
             <Text style={styles.predictLabel}>{t.materialPrediction}</Text>
             <Text style={styles.predictVal}>{getActiveMaterialName()}</Text>
           </View>
           <View style={styles.confidenceGauge}>
             <Text style={styles.confidenceVal}>%{materialConfidence}</Text>
-            <Text style={{ fontSize: 8, fontWeight: '700', color: isLight ? '#065F46' : '#A7F3D0', marginTop: -2 }}>CONF</Text>
+            <Text style={{ fontSize: 7, fontWeight: '700', color: isLight ? '#065F46' : '#A7F3D0', marginTop: -1 }}>CONF</Text>
           </View>
         </View>
 
-        {/* Signal Signatures */}
+        {/* AI Explanation in plain Turkish */}
+        <View style={styles.aiBox}>
+          <View style={styles.aiHeader}>
+            <Ionicons name="sparkles" size={14} color={isLight ? '#0F766E' : '#2DD4BF'} />
+            <Text style={styles.aiTitle}>{t.aiExplanation}</Text>
+          </View>
+          <Text style={styles.aiContent}>{materialExplanation}</Text>
+        </View>
+
+      </View>
+
+      {/* 2. RIGHT COLUMN: Graphs, Similarities */}
+      <ScrollView style={styles.rightColumn} showsVerticalScrollIndicator={false}>
+        
+        {/* Electromagnetic signatures graphs */}
         <View style={styles.panelCard}>
           <Text style={styles.panelTitle}>{language === 'tr' ? 'Elektromanyetik İmzalar' : 'Electromagnetic Signatures'}</Text>
           
@@ -255,12 +283,12 @@ export default function MaterialScreen() {
           <View style={styles.graphContainer}>
             <Svg width="100%" height="100%">
               <Path 
-                d={makeSvgPath(freqSignature, 90, SCREEN_WIDTH - 68, 0.8)} 
+                d={makeSvgPath(freqSignature, 70, rightColumnGraphWidth, 0.7)} 
                 fill="none" 
                 stroke="#10B981" 
-                strokeWidth="2" 
+                strokeWidth="1.5" 
               />
-              <Line x1="0" y1="80" x2={SCREEN_WIDTH - 68} y2="80" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
+              <Line x1="0" y1="65" x2={rightColumnGraphWidth} y2="65" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
             </Svg>
           </View>
 
@@ -268,18 +296,18 @@ export default function MaterialScreen() {
           <View style={styles.graphContainer}>
             <Svg width="100%" height="100%">
               <Path 
-                d={makeSvgPath(refSignature, 90, SCREEN_WIDTH - 68, 0.4)} 
+                d={makeSvgPath(refSignature, 70, rightColumnGraphWidth, 0.35)} 
                 fill="none" 
                 stroke="#3B82F6" 
-                strokeWidth="2" 
+                strokeWidth="1.5" 
               />
-              <Line x1="0" y1="50" x2={SCREEN_WIDTH - 68} y2="50" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
+              <Line x1="0" y1="35" x2={rightColumnGraphWidth} y2="35" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
             </Svg>
           </View>
         </View>
 
-        {/* Material Similarities */}
-        <View style={styles.panelCard}>
+        {/* Similarities matching table */}
+        <View style={[styles.panelCard, { marginBottom: 0 }]}>
           <Text style={styles.panelTitle}>{t.similarityCharts}</Text>
           {similarMaterials.map((sim, index) => (
             <View key={index} style={styles.simRow}>
@@ -290,15 +318,6 @@ export default function MaterialScreen() {
               <Text style={styles.simVal}>%{sim.similarity}</Text>
             </View>
           ))}
-        </View>
-
-        {/* AI Explanation in plain Turkish */}
-        <View style={styles.aiBox}>
-          <View style={styles.aiHeader}>
-            <Ionicons name="sparkles" size={16} color={isLight ? '#0F766E' : '#2DD4BF'} />
-            <Text style={styles.aiTitle}>{t.aiExplanation}</Text>
-          </View>
-          <Text style={styles.aiContent}>{materialExplanation}</Text>
         </View>
 
       </ScrollView>

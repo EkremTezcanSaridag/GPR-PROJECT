@@ -17,8 +17,6 @@ export default function SettingsScreen() {
     setGain,
     noiseFilter,
     setNoiseFilter,
-    antennaType,
-    setAntennaType,
     resolution,
     setResolution
   } = useGpr();
@@ -30,18 +28,28 @@ export default function SettingsScreen() {
     container: {
       flex: 1,
       backgroundColor: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#111827',
+      paddingLeft: 75, // Shift content right to clear Left Sidebar
+      flexDirection: 'row', // Side-by-side columns
     },
-    scrollContent: {
+    // Left Column (Hardware settings) - 50% width
+    leftColumn: {
+      flex: 0.5,
+      padding: 16,
+      borderRightWidth: 1,
+      borderRightColor: isLight ? '#E2E8F0' : '#374151',
+    },
+    // Right Column (Interface & System) - 50% width
+    rightColumn: {
+      flex: 0.5,
       padding: 16,
     },
     sectionTitle: {
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '700',
       color: '#3B82F6',
       textTransform: 'uppercase',
       letterSpacing: 0.8,
       marginBottom: 10,
-      marginTop: 8,
       paddingLeft: 4,
     },
     settingsGroup: {
@@ -50,14 +58,14 @@ export default function SettingsScreen() {
       borderWidth: 1,
       borderColor: isLight ? '#E2E8F0' : '#374151',
       paddingVertical: 4,
-      marginBottom: 20,
+      marginBottom: 16,
       overflow: 'hidden',
     },
     settingRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: 16,
       borderBottomWidth: 1,
       borderBottomColor: isLight ? '#F1F5F9' : '#2D3748',
@@ -71,35 +79,35 @@ export default function SettingsScreen() {
       flex: 1,
     },
     settingIcon: {
-      marginRight: 12,
+      marginRight: 10,
     },
     settingLabel: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '600',
       color: isLight ? '#0F172A' : '#F9FAFB',
     },
     settingSubLabel: {
-      fontSize: 11,
+      fontSize: 10,
       color: isLight ? '#64748B' : '#9CA3AF',
-      marginTop: 2,
+      marginTop: 1,
     },
     // Selector options
     optionGroup: {
       flexDirection: 'row',
       backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
-      borderRadius: 8,
+      borderRadius: 6,
       padding: 2,
     },
     optionBtn: {
-      paddingHorizontal: 8,
-      paddingVertical: 5,
-      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 4,
+      borderRadius: 4,
     },
     optionBtnActive: {
       backgroundColor: '#3B82F6',
     },
     optionText: {
-      fontSize: 11,
+      fontSize: 10.5,
       fontWeight: '600',
       color: isLight ? '#64748B' : '#9CA3AF',
     },
@@ -119,16 +127,16 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      
+      {/* 1. LEFT COLUMN: Hardware Parameters */}
+      <View style={styles.leftColumn}>
+        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Donanım Parametreleri' : 'Hardware Configuration'}</Text>
         
-        {/* Section 1: Donanım ve Sinyal Parametreleri */}
-        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Donanım Ayarları' : 'Hardware Settings'}</Text>
         <View style={styles.settingsGroup}>
-          
-          {/* Anten Frekansı */}
+          {/* Frequency config */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="wifi" size={18} color="#3B82F6" style={styles.settingIcon} />
+              <Ionicons name="wifi" size={16} color="#3B82F6" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsFreq}</Text>
                 <Text style={styles.settingSubLabel}>Frekans aralığını değiştirir</Text>
@@ -141,19 +149,19 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, frequency === f && styles.optionBtnActive]}
                   onPress={() => setFrequency(f)}
                 >
-                  <Text style={[styles.optionText, frequency === f && styles.optionBtnTextActive]}>{f}Mhz</Text>
+                  <Text style={[styles.optionText, frequency === f && styles.optionTextActive]}>{f}Mhz</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Puls Voltajı */}
+          {/* Pulse voltage config */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="flash" size={18} color="#3B82F6" style={styles.settingIcon} />
+              <Ionicons name="flash" size={16} color="#3B82F6" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsPulse}</Text>
-                <Text style={styles.settingSubLabel}>Sinyal gücü ve derinliği etkiler</Text>
+                <Text style={styles.settingSubLabel}>Sinyal gücü ve derinlik</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -163,49 +171,48 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, pulseVoltage === v && styles.optionBtnActive]}
                   onPress={() => setPulseVoltage(v)}
                 >
-                  <Text style={[styles.optionText, pulseVoltage === v && styles.optionBtnTextActive]}>{v}V</Text>
+                  <Text style={[styles.optionText, pulseVoltage === v && styles.optionTextActive]}>{v}V</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Sinyal Kazancı (Gain) */}
-          <View style={styles.settingRowLast}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="trending-up" size={18} color="#3B82F6" style={styles.settingIcon} />
-                <View>
-                  <Text style={styles.settingLabel}>{t.settingsGain}</Text>
-                  <Text style={styles.settingSubLabel}>Yansıma hassasiyeti kazancı</Text>
-                </View>
-              </View>
-              <View style={styles.optionGroup}>
-                {[30, 40, 50].map((g) => (
-                  <TouchableOpacity 
-                    key={g}
-                    style={[styles.optionBtn, gain === g && styles.optionBtnActive]}
-                    onPress={() => setGain(g)}
-                  >
-                    <Text style={[styles.optionText, gain === g && styles.optionBtnTextActive]}>{g}dB</Text>
-                  </TouchableOpacity>
-                ))}
+          {/* Gain control config */}
+          <View style={[styles.settingRow, styles.settingRowLast]}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="trending-up" size={16} color="#3B82F6" style={styles.settingIcon} />
+              <View>
+                <Text style={styles.settingLabel}>{t.settingsGain}</Text>
+                <Text style={styles.settingSubLabel}>Alıcı sinyal kazanç çarpanı</Text>
               </View>
             </View>
+            <View style={styles.optionGroup}>
+              {[30, 40, 50].map((g) => (
+                <TouchableOpacity 
+                  key={g}
+                  style={[styles.optionBtn, gain === g && styles.optionBtnActive]}
+                  onPress={() => setGain(g)}
+                >
+                  <Text style={[styles.optionText, gain === g && styles.optionTextActive]}>{g}dB</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-
         </View>
+      </View>
 
-        {/* Section 2: Filtre ve Arayüz Ayarları */}
-        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Arayüz ve Filtreler' : 'Interface & Filters'}</Text>
+      {/* 2. RIGHT COLUMN: Interface & System preferences */}
+      <View style={styles.rightColumn}>
+        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Arayüz ve Sistem' : 'Interface & System Settings'}</Text>
+        
         <View style={styles.settingsGroup}>
-          
-          {/* Gürültü Filtreleme */}
+          {/* Noise Filtering */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="filter" size={18} color="#06B6D4" style={styles.settingIcon} />
+              <Ionicons name="filter" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsNoise}</Text>
-                <Text style={styles.settingSubLabel}>Zemin gürültü filtresi derecesi</Text>
+                <Text style={styles.settingSubLabel}>Gürültü filtre derecesi</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -215,7 +222,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, noiseFilter === n && styles.optionBtnActive]}
                   onPress={() => setNoiseFilter(n)}
                 >
-                  <Text style={[styles.optionText, noiseFilter === n && styles.optionBtnTextActive]}>
+                  <Text style={[styles.optionText, noiseFilter === n && styles.optionTextActive]}>
                     {n.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -223,13 +230,13 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Tarama Çözünürlüğü */}
+          {/* Resolution */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="grid-outline" size={18} color="#06B6D4" style={styles.settingIcon} />
+              <Ionicons name="grid-outline" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsRes}</Text>
-                <Text style={styles.settingSubLabel}>Tarama hassasiyeti yoğunluğu</Text>
+                <Text style={styles.settingSubLabel}>Sinyal yoğunluğu çözünürlüğü</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -239,7 +246,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, resolution === r && styles.optionBtnActive]}
                   onPress={() => setResolution(r)}
                 >
-                  <Text style={[styles.optionText, resolution === r && styles.optionBtnTextActive]}>
+                  <Text style={[styles.optionText, resolution === r && styles.optionTextActive]}>
                     {r.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -247,13 +254,13 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Dil Seçeneği */}
+          {/* Language Selection */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="language" size={18} color="#06B6D4" style={styles.settingIcon} />
+              <Ionicons name="language" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsLang}</Text>
-                <Text style={styles.settingSubLabel}>Uygulama genel dili</Text>
+                <Text style={styles.settingSubLabel}>Arayüz genel çalışma dili</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -263,7 +270,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, language === lang.code && styles.optionBtnActive]}
                   onPress={() => setLanguage(lang.code)}
                 >
-                  <Text style={[styles.optionText, language === lang.code && styles.optionBtnTextActive]}>
+                  <Text style={[styles.optionText, language === lang.code && styles.optionTextActive]}>
                     {lang.label}
                   </Text>
                 </TouchableOpacity>
@@ -271,67 +278,57 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Tema Seçeneği */}
-          <View style={styles.settingRowLast}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="color-palette" size={18} color="#06B6D4" style={styles.settingIcon} />
-                <View>
-                  <Text style={styles.settingLabel}>{t.settingsTheme}</Text>
-                  <Text style={styles.settingSubLabel}>Renk paletini değiştirir</Text>
-                </View>
+          {/* Theme Selection */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="color-palette" size={16} color="#06B6D4" style={styles.settingIcon} />
+              <View>
+                <Text style={styles.settingLabel}>{t.settingsTheme}</Text>
+                <Text style={styles.settingSubLabel}>Saha renk şemasını değiştirir</Text>
               </View>
-              <View style={styles.optionGroup}>
-                {['light', 'dark', 'industrial'].map((th) => (
-                  <TouchableOpacity 
-                    key={th}
-                    style={[styles.optionBtn, theme === th && styles.optionBtnActive]}
-                    onPress={() => setTheme(th as 'light' | 'dark' | 'industrial')}
-                  >
-                    <Text style={[styles.optionText, theme === th && styles.optionBtnTextActive]}>
-                      {th.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            </View>
+            <View style={styles.optionGroup}>
+              {['light', 'dark', 'industrial'].map((th) => (
+                <TouchableOpacity 
+                  key={th}
+                  style={[styles.optionBtn, theme === th && styles.optionBtnActive]}
+                  onPress={() => setTheme(th as 'light' | 'dark' | 'industrial')}
+                >
+                  <Text style={[styles.optionText, theme === th && styles.optionTextActive]}>
+                    {th.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
-        </View>
-
-        {/* Section 3: GPS ve Sistem Ayarları */}
-        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Sistem ve Depolama' : 'System & Storage'}</Text>
-        <View style={styles.settingsGroup}>
-          
-          {/* RTK Düzeltmesi (GPS) */}
+          {/* RTK GPS toggle */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="locate-outline" size={18} color="#22C55E" style={styles.settingIcon} />
+              <Ionicons name="locate-outline" size={16} color="#22C55E" style={styles.settingIcon} />
               <View>
-                <Text style={styles.settingLabel}>RTK Düzeltmesi</Text>
-                <Text style={styles.settingSubLabel}>GPS koordinat hassasiyeti</Text>
+                <Text style={styles.settingLabel}>RTK Düzeltme Bağlantısı</Text>
+                <Text style={styles.settingSubLabel}>Yüksek hassasiyetli GPS kilidi</Text>
               </View>
             </View>
             <Switch value={true} trackColor={{ true: '#22C55E' }} />
           </View>
 
-          {/* Otomatik Kaydet */}
-          <View style={styles.settingRowLast}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="save-outline" size={18} color="#22C55E" style={styles.settingIcon} />
-                <View>
-                  <Text style={styles.settingLabel}>Otomatik Kaydet</Text>
-                  <Text style={styles.settingSubLabel}>Taramaları yerel hafızaya kaydeder</Text>
-                </View>
+          {/* Autosave toggle */}
+          <View style={[styles.settingRow, styles.settingRowLast]}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="save-outline" size={16} color="#22C55E" style={styles.settingIcon} />
+              <View>
+                <Text style={styles.settingLabel}>Otomatik Veri Kaydet</Text>
+                <Text style={styles.settingSubLabel}>Verileri otomatik hafızaya depolar</Text>
               </View>
-              <Switch value={true} trackColor={{ true: '#22C55E' }} />
             </View>
+            <Switch value={true} trackColor={{ true: '#22C55E' }} />
           </View>
-
         </View>
 
-      </ScrollView>
+      </View>
+      
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Line, Path, G } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../../context/LanguageContext';
 import { useGpr, DiagnosticItem } from '../../context/GprContext';
@@ -12,8 +12,7 @@ export default function HomeScreen() {
     theme, 
     diagnosticsStatus, 
     diagnosticItems, 
-    runDiagnostics, 
-    isDiagnosticsDone
+    runDiagnostics
   } = useGpr();
   const router = useRouter();
 
@@ -67,9 +66,7 @@ export default function HomeScreen() {
       duration: 3500,
       useNativeDriver: false,
     }).start(() => {
-      // Transition to diagnostics after splash progress completes
       setShowSplash(false);
-      // Run self-test diagnostics automatically
       runDiagnostics();
     });
   }, []);
@@ -81,6 +78,7 @@ export default function HomeScreen() {
     container: {
       flex: 1,
       backgroundColor: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#111827',
+      paddingLeft: showSplash ? 0 : 75, // Pad content to the right of the sidebar
     },
     // Splash Screen Layout (Optimized for Landscape)
     splashContainer: {
@@ -137,18 +135,16 @@ export default function HomeScreen() {
       height: '100%',
       backgroundColor: '#3B82F6',
     },
-    // Diagnostics Layout (Landscape Optimized)
+    // Diagnostics Layout (Landscape columns side-by-side)
     diagContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       padding: 16,
-      backgroundColor: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#0B0F19',
     },
     diagCard: {
-      width: '90%',
-      maxWidth: 780,
-      height: '90%',
+      width: '95%',
+      height: '95%',
       backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
       borderRadius: 16,
       padding: 20,
@@ -185,7 +181,7 @@ export default function HomeScreen() {
     diagItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justify('space-between' as any),
       paddingVertical: 7,
       borderBottomWidth: 1,
       borderBottomColor: isLight ? '#F1F5F9' : '#2D3748',
@@ -270,7 +266,7 @@ export default function HomeScreen() {
       borderWidth: 1,
       borderColor: isLight ? '#E2E8F0' : '#374151',
       alignItems: 'center',
-      textAlign: 'center',
+      justifyContent: 'center',
       minHeight: 140,
     },
     navIconContainer: {
@@ -346,22 +342,18 @@ export default function HomeScreen() {
           <View style={styles.splashLogoContainer}>
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
               <Svg width="120" height="120" viewBox="0 0 100 100">
-                {/* Radar Grid Circles */}
                 <Circle cx="50" cy="50" r="40" stroke="#1F2937" strokeWidth="1" fill="none" />
                 <Circle cx="50" cy="50" r="30" stroke="#1F2937" strokeWidth="1" fill="none" />
                 <Circle cx="50" cy="50" r="20" stroke="#1F2937" strokeWidth="1" fill="none" />
                 
-                {/* Crosshairs */}
                 <Line x1="10" y1="50" x2="90" y2="50" stroke="#1F2937" strokeWidth="1" />
                 <Line x1="50" y1="10" x2="50" y2="90" stroke="#1F2937" strokeWidth="1" />
 
-                {/* Animated Sweeper line */}
                 <Animated.View style={{ transform: [{ rotate: spin }], originX: '50px', originY: '50px' } as any}>
                   <Line x1="50" y1="50" x2="50" y2="10" stroke="#06B6D4" strokeWidth="2.5" strokeLinecap="round" />
                   <Circle cx="50" cy="20" r="3" fill="#22C55E" />
                 </Animated.View>
                 
-                {/* Pulsing center dot */}
                 <Circle cx="50" cy="50" r="4" fill="#3B82F6" />
               </Svg>
             </Animated.View>
@@ -383,34 +375,36 @@ export default function HomeScreen() {
   // 2. Render Diagnostic Self-Test Screen
   if (diagnosticsStatus === 'running' || diagnosticsStatus === 'idle') {
     return (
-      <View style={styles.diagContainer}>
-        <View style={styles.diagCard}>
-          <View style={styles.diagHeaderSide}>
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text style={styles.diagTitle}>{t.diagnosticsTitle}</Text>
-            <Text style={styles.diagSub}>{t.diagnosticsSub}</Text>
-          </View>
+      <View style={styles.container}>
+        <View style={styles.diagContainer}>
+          <View style={styles.diagCard}>
+            <View style={styles.diagHeaderSide}>
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text style={styles.diagTitle}>{t.diagnosticsTitle}</Text>
+              <Text style={styles.diagSub}>{t.diagnosticsSub}</Text>
+            </View>
 
-          <ScrollView style={styles.diagListSide} showsVerticalScrollIndicator={false}>
-            {diagnosticItems.map((item) => {
-              const statusColor = getStatusColor(item.status);
-              return (
-                <View key={item.id} style={styles.diagItem}>
-                  <View style={styles.diagItemLeft}>
-                    <Ionicons 
-                      name={item.status === 'checking' ? 'sync' : item.status === 'ready' ? 'checkmark-circle' : 'alert-circle'} 
-                      size={16} 
-                      color={item.status === 'ready' ? '#22C55E' : item.status === 'warning' ? '#F59E0B' : item.status === 'fault' ? '#EF4444' : '#3B82F6'} 
-                    />
-                    <Text style={styles.diagItemText}>{t[item.nameKey]}</Text>
+            <ScrollView style={styles.diagListSide} showsVerticalScrollIndicator={false}>
+              {diagnosticItems.map((item) => {
+                const statusColor = getStatusColor(item.status);
+                return (
+                  <View key={item.id} style={styles.diagItem}>
+                    <View style={styles.diagItemLeft}>
+                      <Ionicons 
+                        name={item.status === 'checking' ? 'sync' : item.status === 'ready' ? 'checkmark-circle' : 'alert-circle'} 
+                        size={16} 
+                        color={item.status === 'ready' ? '#22C55E' : item.status === 'warning' ? '#F59E0B' : item.status === 'fault' ? '#EF4444' : '#3B82F6'} 
+                      />
+                      <Text style={styles.diagItemText}>{t[item.nameKey]}</Text>
+                    </View>
+                    <View style={[styles.badge, { backgroundColor: statusColor.bg }]}>
+                      <Text style={[styles.badgeText, { color: statusColor.text }]}>{statusColor.label}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.badge, { backgroundColor: statusColor.bg }]}>
-                    <Text style={[styles.badgeText, { color: statusColor.text }]}>{statusColor.label}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
       </View>
     );
