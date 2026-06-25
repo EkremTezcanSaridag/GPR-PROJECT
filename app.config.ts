@@ -5,7 +5,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: 'GPR Project',
   slug: 'gpr-project',
   version: '1.0.0',
-  orientation: 'portrait',
+  orientation: 'landscape',
   icon: './assets/images/icon.png',
   scheme: 'gprproject',
   userInterfaceStyle: 'automatic',
