@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage, Language } from '../../context/LanguageContext';
@@ -18,45 +18,82 @@ export default function SettingsScreen() {
     noiseFilter,
     setNoiseFilter,
     resolution,
-    setResolution
+    setResolution,
+    saveLocation,
+    setSaveLocation,
+    audioAlertConfig,
+    setTargetAudioAlert
   } = useGpr();
+
+  // Stateful toggles for better UI operation
+  const [rtkEnabled, setRtkEnabled] = useState(true);
+  const [autosaveEnabled, setAutosaveEnabled] = useState(true);
+
+  const languagesList: { code: Language; label: string }[] = [
+    { code: 'tr', label: 'TR' },
+    { code: 'en', label: 'EN' },
+    { code: 'de', label: 'DE' },
+    { code: 'fr', label: 'FR' },
+    { code: 'ru', label: 'RU' },
+    { code: 'ar', label: 'AR' }
+  ];
 
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
 
+  const colors = {
+    bg: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#070913',
+    panelBg: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#0D1220',
+    border: isLight ? '#E2E8F0' : isDark ? '#334155' : '#1F2937',
+    text: isLight ? '#0F172A' : '#F9FAFB',
+    subText: isLight ? '#475569' : '#9CA3AF',
+    accent: '#F59E0B',
+    optionBg: isLight ? '#E2E8F0' : isDark ? '#2D3748' : '#1E293B',
+    optionActiveBg: '#F59E0B',
+    optionActiveText: '#090D16',
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isLight ? '#F8FAFC' : isDark ? '#0F172A' : '#111827',
+      backgroundColor: colors.bg,
       paddingLeft: 75, // Shift content right to clear Left Sidebar
       flexDirection: 'row', // Side-by-side columns
     },
-    // Left Column (Hardware settings) - 50% width
     leftColumn: {
       flex: 0.5,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingTop: 16,
       borderRightWidth: 1,
-      borderRightColor: isLight ? '#E2E8F0' : '#374151',
+      borderRightColor: colors.border,
     },
-    // Right Column (Interface & System) - 50% width
     rightColumn: {
       flex: 0.5,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingTop: 16,
     },
-    sectionTitle: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: '#3B82F6',
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       marginBottom: 10,
       paddingLeft: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingBottom: 6,
+    },
+    sectionTitle: {
+      fontSize: 10.5,
+      fontWeight: '800',
+      color: colors.accent,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
     },
     settingsGroup: {
-      backgroundColor: isLight ? '#FFFFFF' : isDark ? '#1E293B' : '#1C2537',
+      backgroundColor: colors.panelBg,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: isLight ? '#E2E8F0' : '#374151',
+      borderColor: colors.border,
       paddingVertical: 4,
       marginBottom: 16,
       overflow: 'hidden',
@@ -65,10 +102,10 @@ export default function SettingsScreen() {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 10,
+      paddingVertical: 12,
       paddingHorizontal: 16,
       borderBottomWidth: 1,
-      borderBottomColor: isLight ? '#F1F5F9' : '#2D3748',
+      borderBottomColor: colors.border,
     },
     settingRowLast: {
       borderBottomWidth: 0,
@@ -82,64 +119,63 @@ export default function SettingsScreen() {
       marginRight: 10,
     },
     settingLabel: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: isLight ? '#0F172A' : '#F9FAFB',
+      fontSize: 12.5,
+      fontWeight: '700',
+      color: colors.text,
     },
     settingSubLabel: {
-      fontSize: 10,
-      color: isLight ? '#64748B' : '#9CA3AF',
-      marginTop: 1,
+      fontSize: 9.5,
+      color: colors.subText,
+      marginTop: 2,
     },
-    // Selector options
     optionGroup: {
       flexDirection: 'row',
-      backgroundColor: isLight ? '#F1F5F9' : '#2D3748',
+      backgroundColor: colors.optionBg,
       borderRadius: 6,
       padding: 2,
     },
     optionBtn: {
-      paddingHorizontal: 6,
+      paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 4,
+      marginHorizontal: 1,
     },
     optionBtnActive: {
-      backgroundColor: '#3B82F6',
+      backgroundColor: colors.optionActiveBg,
     },
     optionText: {
-      fontSize: 10.5,
-      fontWeight: '600',
-      color: isLight ? '#64748B' : '#9CA3AF',
+      fontSize: 9.5,
+      fontWeight: '700',
+      color: colors.subText,
     },
     optionTextActive: {
-      color: '#FFFFFF',
+      color: colors.optionActiveText,
+      fontWeight: '800',
     }
   });
-
-  const languagesList: { code: Language; label: string }[] = [
-    { code: 'tr', label: 'TR' },
-    { code: 'en', label: 'EN' },
-    { code: 'de', label: 'DE' },
-    { code: 'fr', label: 'FR' },
-    { code: 'ru', label: 'RU' },
-    { code: 'ar', label: 'AR' }
-  ];
 
   return (
     <View style={styles.container}>
       
       {/* 1. LEFT COLUMN: Hardware Parameters */}
-      <View style={styles.leftColumn}>
-        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Donanım Parametreleri' : 'Hardware Configuration'}</Text>
+      <ScrollView 
+        style={styles.leftColumn} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        <View style={styles.headerRow}>
+          <Ionicons name="hardware-chip-outline" size={14} color={colors.accent} />
+          <Text style={styles.sectionTitle}>{language === 'tr' ? 'Donanım Parametreleri' : 'Hardware Configuration'}</Text>
+        </View>
         
         <View style={styles.settingsGroup}>
           {/* Frequency config */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="wifi" size={16} color="#3B82F6" style={styles.settingIcon} />
+              <Ionicons name="wifi" size={16} color={colors.accent} style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsFreq}</Text>
-                <Text style={styles.settingSubLabel}>Frekans aralığını değiştirir</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Anten merkez frekansı' : 'Antenna center frequency'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -149,7 +185,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, frequency === f && styles.optionBtnActive]}
                   onPress={() => setFrequency(f)}
                 >
-                  <Text style={[styles.optionText, frequency === f && styles.optionTextActive]}>{f}Mhz</Text>
+                  <Text style={[styles.optionText, frequency === f && styles.optionTextActive]}>{f} MHz</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -158,10 +194,10 @@ export default function SettingsScreen() {
           {/* Pulse voltage config */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <Ionicons name="flash" size={16} color="#3B82F6" style={styles.settingIcon} />
+              <Ionicons name="flash" size={16} color={colors.accent} style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsPulse}</Text>
-                <Text style={styles.settingSubLabel}>Sinyal gücü ve derinlik</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Anten çıkış gücü gerilimi' : 'Antenna output voltage'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -180,10 +216,10 @@ export default function SettingsScreen() {
           {/* Gain control config */}
           <View style={[styles.settingRow, styles.settingRowLast]}>
             <View style={styles.settingLeft}>
-              <Ionicons name="trending-up" size={16} color="#3B82F6" style={styles.settingIcon} />
+              <Ionicons name="trending-up" size={16} color={colors.accent} style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsGain}</Text>
-                <Text style={styles.settingSubLabel}>Alıcı sinyal kazanç çarpanı</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Alıcı sinyal kazanç çarpanı' : 'Receiver gain multiplier'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -193,17 +229,83 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, gain === g && styles.optionBtnActive]}
                   onPress={() => setGain(g)}
                 >
-                  <Text style={[styles.optionText, gain === g && styles.optionTextActive]}>{g}dB</Text>
+                  <Text style={[styles.optionText, gain === g && styles.optionTextActive]}>{g} dB</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         </View>
-      </View>
+
+        {/* Audio Alert Settings */}
+        <View style={[styles.headerRow, { marginTop: 16 }]}>
+          <Ionicons name="volume-high-outline" size={14} color={colors.accent} />
+          <Text style={styles.sectionTitle}>{language === 'tr' ? 'Sesli Uyarı Ayarları' : 'Audio Alert Settings'}</Text>
+        </View>
+        
+        <View style={styles.settingsGroup}>
+          {[
+            { id: 'gold', label: language === 'tr' ? 'Altın Sinyali Uyarısı' : 'Gold Target Alert' },
+            { id: 'silver', label: language === 'tr' ? 'Gümüş Sinyali Uyarısı' : 'Silver Target Alert' },
+            { id: 'copper', label: language === 'tr' ? 'Bakır Sinyali Uyarısı' : 'Copper Target Alert' },
+            { id: 'iron', label: language === 'tr' ? 'Demir Sinyali Uyarısı' : 'Ferrous Target Alert' },
+            { id: 'concrete', label: language === 'tr' ? 'Beton Sinyali Uyarısı' : 'Concrete Target Alert' },
+            { id: 'water', label: language === 'tr' ? 'Su Sinyali Uyarısı' : 'Aqueous Target Alert' },
+            { id: 'void', label: language === 'tr' ? 'Boşluk Sinyali Uyarısı' : 'Void Target Alert' },
+            { id: 'tunnel', label: language === 'tr' ? 'Tünel Sinyali Uyarısı' : 'Tunnel Target Alert' }
+          ].map((target, idx) => {
+            const isLast = idx === 7;
+            const currentMode = audioAlertConfig[target.id] || 'beep';
+            return (
+              <View key={target.id} style={[styles.settingRow, isLast && styles.settingRowLast]}>
+                <View style={[styles.settingLeft, { marginRight: 8 }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.settingLabel, { fontSize: 11.5 }]} numberOfLines={1}>{target.label}</Text>
+                    <Text style={styles.settingSubLabel}>Mode: {currentMode.toUpperCase()}</Text>
+                  </View>
+                </View>
+                <View style={styles.optionGroup}>
+                  {[
+                    { code: 'speech', label: language === 'tr' ? 'SES' : 'TALK' },
+                    { code: 'beep', label: language === 'tr' ? 'BİP' : 'BEEP' },
+                    { code: 'siren', label: language === 'tr' ? 'SİREN' : 'SIREN' },
+                    { code: 'chime', label: language === 'tr' ? 'MELO' : 'CHM' },
+                    { code: 'mute', label: language === 'tr' ? 'SESSİZ' : 'MUTE' }
+                  ].map((type) => (
+                    <TouchableOpacity 
+                      key={type.code}
+                      style={[
+                        styles.optionBtn, 
+                        { paddingHorizontal: 4, paddingVertical: 2 },
+                        currentMode === type.code && styles.optionBtnActive
+                      ]}
+                      onPress={() => setTargetAudioAlert(target.id, type.code as any)}
+                    >
+                      <Text style={[
+                        styles.optionText, 
+                        { fontSize: 8.5, color: currentMode === type.code ? colors.optionActiveText : colors.subText },
+                        currentMode === type.code && styles.optionTextActive
+                      ]}>
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
 
       {/* 2. RIGHT COLUMN: Interface & System preferences */}
-      <View style={styles.rightColumn}>
-        <Text style={styles.sectionTitle}>{language === 'tr' ? 'Arayüz ve Sistem' : 'Interface & System Settings'}</Text>
+      <ScrollView 
+        style={styles.rightColumn} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+      >
+        <View style={styles.headerRow}>
+          <Ionicons name="options-outline" size={14} color={colors.accent} />
+          <Text style={styles.sectionTitle}>{language === 'tr' ? 'Arayüz ve Sistem' : 'Interface & System Settings'}</Text>
+        </View>
         
         <View style={styles.settingsGroup}>
           {/* Noise Filtering */}
@@ -212,7 +314,7 @@ export default function SettingsScreen() {
               <Ionicons name="filter" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsNoise}</Text>
-                <Text style={styles.settingSubLabel}>Gürültü filtre derecesi</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Gürültü filtre derecesi' : 'Noise filter levels'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -222,7 +324,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, noiseFilter === n && styles.optionBtnActive]}
                   onPress={() => setNoiseFilter(n)}
                 >
-                  <Text style={[styles.optionText, noiseFilter === n && styles.optionTextActive]}>
+                  <Text style={[styles.optionText, { color: noiseFilter === n ? colors.optionActiveText : colors.subText }, noiseFilter === n && styles.optionTextActive]}>
                     {n.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -236,7 +338,7 @@ export default function SettingsScreen() {
               <Ionicons name="grid-outline" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsRes}</Text>
-                <Text style={styles.settingSubLabel}>Sinyal yoğunluğu çözünürlüğü</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Sinyal yoğunluğu çözünürlüğü' : 'Signal density resolution'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -246,7 +348,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, resolution === r && styles.optionBtnActive]}
                   onPress={() => setResolution(r)}
                 >
-                  <Text style={[styles.optionText, resolution === r && styles.optionTextActive]}>
+                  <Text style={[styles.optionText, { color: resolution === r ? colors.optionActiveText : colors.subText }, resolution === r && styles.optionTextActive]}>
                     {r.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -260,7 +362,7 @@ export default function SettingsScreen() {
               <Ionicons name="language" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsLang}</Text>
-                <Text style={styles.settingSubLabel}>Arayüz genel çalışma dili</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Arayüz genel çalışma dili' : 'System translation language'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -270,7 +372,7 @@ export default function SettingsScreen() {
                   style={[styles.optionBtn, language === lang.code && styles.optionBtnActive]}
                   onPress={() => setLanguage(lang.code)}
                 >
-                  <Text style={[styles.optionText, language === lang.code && styles.optionTextActive]}>
+                  <Text style={[styles.optionText, { color: language === lang.code ? colors.optionActiveText : colors.subText }, language === lang.code && styles.optionTextActive]}>
                     {lang.label}
                   </Text>
                 </TouchableOpacity>
@@ -284,7 +386,7 @@ export default function SettingsScreen() {
               <Ionicons name="color-palette" size={16} color="#06B6D4" style={styles.settingIcon} />
               <View>
                 <Text style={styles.settingLabel}>{t.settingsTheme}</Text>
-                <Text style={styles.settingSubLabel}>Saha renk şemasını değiştirir</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Saha renk şemasını değiştirir' : 'Field layout color scheme'}</Text>
               </View>
             </View>
             <View style={styles.optionGroup}>
@@ -292,9 +394,9 @@ export default function SettingsScreen() {
                 <TouchableOpacity 
                   key={th}
                   style={[styles.optionBtn, theme === th && styles.optionBtnActive]}
-                  onPress={() => setTheme(th as 'light' | 'dark' | 'industrial')}
+                  onPress={() => setTheme(th as any)}
                 >
-                  <Text style={[styles.optionText, theme === th && styles.optionTextActive]}>
+                  <Text style={[styles.optionText, { color: theme === th ? colors.optionActiveText : colors.subText }, theme === th && styles.optionTextActive]}>
                     {th.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -307,27 +409,65 @@ export default function SettingsScreen() {
             <View style={styles.settingLeft}>
               <Ionicons name="locate-outline" size={16} color="#22C55E" style={styles.settingIcon} />
               <View>
-                <Text style={styles.settingLabel}>RTK Düzeltme Bağlantısı</Text>
-                <Text style={styles.settingSubLabel}>Yüksek hassasiyetli GPS kilidi</Text>
+                <Text style={styles.settingLabel}>{language === 'tr' ? 'RTK Düzeltme Bağlantısı' : 'RTK Correction link'}</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Yüksek hassasiyetli GPS kilidi' : 'High precision GPS positioning'}</Text>
               </View>
             </View>
-            <Switch value={true} trackColor={{ true: '#22C55E' }} />
+            <Switch 
+              value={rtkEnabled} 
+              onValueChange={setRtkEnabled}
+              trackColor={{ false: colors.optionBg, true: 'rgba(245, 158, 11, 0.4)' }}
+              thumbColor={rtkEnabled ? colors.accent : colors.subText}
+            />
           </View>
 
           {/* Autosave toggle */}
-          <View style={[styles.settingRow, styles.settingRowLast]}>
+          <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <Ionicons name="save-outline" size={16} color="#22C55E" style={styles.settingIcon} />
               <View>
-                <Text style={styles.settingLabel}>Otomatik Veri Kaydet</Text>
-                <Text style={styles.settingSubLabel}>Verileri otomatik hafızaya depolar</Text>
+                <Text style={styles.settingLabel}>{language === 'tr' ? 'Otomatik Veri Kaydet' : 'Autosave Data'}</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'Verileri otomatik hafızaya depolar' : 'Save logs automatically to storage'}</Text>
               </View>
             </View>
-            <Switch value={true} trackColor={{ true: '#22C55E' }} />
+            <Switch 
+              value={autosaveEnabled} 
+              onValueChange={setAutosaveEnabled}
+              trackColor={{ false: colors.optionBg, true: 'rgba(245, 158, 11, 0.4)' }}
+              thumbColor={autosaveEnabled ? colors.accent : colors.subText}
+            />
+          </View>
+
+          {/* Save Location Selector */}
+          <View style={[styles.settingRow, styles.settingRowLast]}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="folder-open-outline" size={16} color="#EF4444" style={styles.settingIcon} />
+              <View>
+                <Text style={styles.settingLabel}>{language === 'tr' ? 'Kayıt Yolu Konumu' : 'Logs Save Destination'}</Text>
+                <Text style={styles.settingSubLabel}>{language === 'tr' ? 'GPR tarama dosyalarının kaydedileceği alan' : 'Select partition path for GPR scans'}</Text>
+              </View>
+            </View>
+            <View style={styles.optionGroup}>
+              {[
+                { code: 'local', label: language === 'tr' ? 'BELLEK' : 'LOCAL' },
+                { code: 'sd_card', label: language === 'tr' ? 'SD KART' : 'SD CARD' },
+                { code: 'cloud', label: language === 'tr' ? 'BULUT' : 'CLOUD' },
+                { code: 'documents', label: language === 'tr' ? 'BELGELER' : 'DOCS' }
+              ].map((loc) => (
+                <TouchableOpacity 
+                  key={loc.code}
+                  style={[styles.optionBtn, saveLocation === loc.code && styles.optionBtnActive]}
+                  onPress={() => setSaveLocation(loc.code)}
+                >
+                  <Text style={[styles.optionText, { color: saveLocation === loc.code ? colors.optionActiveText : colors.subText }, saveLocation === loc.code && styles.optionTextActive]}>
+                    {loc.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
-
-      </View>
+      </ScrollView>
       
     </View>
   );

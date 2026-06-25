@@ -1,4 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 import { useLanguage, Language } from './LanguageContext';
 
 export interface Anomaly {
@@ -82,6 +84,7 @@ interface GprContextType {
   antennaType: string;
   resolution: string; // 'low' | 'medium' | 'high'
   theme: 'light' | 'dark' | 'industrial';
+  saveLocation: string; // 'local' | 'sd_card' | 'cloud' | 'documents'
   setFrequency: (f: number) => void;
   setPulseVoltage: (v: number) => void;
   setGain: (g: number) => void;
@@ -89,6 +92,13 @@ interface GprContextType {
   setAntennaType: (t: string) => void;
   setResolution: (r: string) => void;
   setTheme: (t: 'light' | 'dark' | 'industrial') => void;
+  setSaveLocation: (loc: string) => void;
+  audioAlertConfig: Record<string, 'speech' | 'beep' | 'siren' | 'chime' | 'mute'>;
+  setTargetAudioAlert: (targetId: string, alertType: 'speech' | 'beep' | 'siren' | 'chime' | 'mute') => void;
+  playAudioAlert: (type: string, materialName: string) => void;
+  playBeepSound: () => void;
+  isDemoMode: boolean;
+  setIsDemoMode: (val: boolean) => void;
 
   // Copilot Assistant
   copilotText: string;
@@ -108,6 +118,25 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [antennaType, setAntennaType] = useState('Shielded Bowtie 500MHz');
   const [resolution, setResolution] = useState('high');
   const [theme, setTheme] = useState<'light' | 'dark' | 'industrial'>('industrial');
+  const [saveLocation, setSaveLocation] = useState<string>('local');
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [audioAlertConfig, setAudioAlertConfig] = useState<Record<string, 'speech' | 'beep' | 'siren' | 'chime' | 'mute'>>({
+    gold: 'speech',
+    silver: 'speech',
+    copper: 'beep',
+    iron: 'beep',
+    concrete: 'chime',
+    water: 'chime',
+    void: 'siren',
+    tunnel: 'siren',
+  });
+
+  const setTargetAudioAlert = (targetId: string, alertType: 'speech' | 'beep' | 'siren' | 'chime' | 'mute') => {
+    setAudioAlertConfig(prev => ({
+      ...prev,
+      [targetId]: alertType
+    }));
+  };
 
   // Diagnostics
   const [diagnosticsStatus, setDiagnosticsStatus] = useState<'idle' | 'running' | 'completed'>('idle');
@@ -183,7 +212,10 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ]);
 
   const addLog = (log: ScanLog) => {
-    setLogs(prev => [log, ...prev]);
+    setLogs(prev => {
+      const updated = [log, ...prev];
+      return updated.slice(0, 10); // Keep at most 10 logs
+    });
   };
 
   // Run Startup self-tests
@@ -244,7 +276,7 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Update live-scanning simulation values
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: any;
     if (isScanning && !isPaused) {
       timer = setInterval(() => {
         setScanTime(prev => prev + 1);
@@ -309,6 +341,54 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return () => clearInterval(timer);
   }, [isScanning, isPaused, scanTime]);
+
+  const playSoundHelper = async (source: any) => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        source,
+        { shouldPlay: true }
+      );
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (e) {
+      console.log("Audio play failed: ", e);
+    }
+  };
+
+  const playBeepSound = () => {
+    playSoundHelper(require('../assets/beep.ogg'));
+  };
+
+  const playSirenSound = () => {
+    playSoundHelper(require('../assets/siren.ogg'));
+  };
+
+  const playChimeSound = () => {
+    playSoundHelper(require('../assets/chime.ogg'));
+  };
+
+  const playAudioAlert = (type: string, materialName: string) => {
+    const alertType = audioAlertConfig[type] || 'beep';
+    if (alertType === 'mute') return;
+
+    if (alertType === 'speech') {
+      const speakText = language === 'tr' 
+        ? `Dikkat: Zemin altında ${materialName} yansıma karakteristiği algılandı.`
+        : `Warning: Subsurface ${materialName} reflection signature detected.`;
+      Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+    } else {
+      if (alertType === 'beep') {
+        playBeepSound();
+      } else if (alertType === 'siren') {
+        playSirenSound();
+      } else if (alertType === 'chime') {
+        playChimeSound();
+      }
+    }
+  };
 
   const triggerMockDetection = () => {
     const mockObjects = [
@@ -438,9 +518,38 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       addLog(newLog);
+
+      // Voice readout of detected anomalies just like in the demo
+      if (detectedAnomalies.length > 0) {
+        const count = detectedAnomalies.length;
+        let speakText = '';
+        if (language === 'tr') {
+          speakText = `Tarama tamamlandı. Yapay zeka analizi ile toplam ${count} adet zemin altı anomali tespit edildi. `;
+          detectedAnomalies.forEach((anom, idx) => {
+            speakText += `${idx + 1} nci sırada, ${anom.depth} metre derinlikte ${anom.material}. `;
+          });
+        } else {
+          speakText = `Scan complete. Detected ${count} subsurface anomalies with AI analysis. `;
+          detectedAnomalies.forEach((anom, idx) => {
+            speakText += `Number ${idx + 1}, ${anom.material} at ${anom.depth} meters deep. `;
+          });
+        }
+        
+        setTimeout(() => {
+          Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+        }, 800);
+      } else {
+        const speakText = language === 'tr'
+          ? 'Tarama tamamlandı. Herhangi bir zemin altı anomali tespit edilemedi.'
+          : 'Scan complete. No subsurface anomalies detected.';
+        setTimeout(() => {
+          Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
+        }, 800);
+      }
     }
     setIsScanning(false);
     setIsPaused(false);
+    setIsDemoMode(false); // Switch to live/scanned data view automatically
     const stopMsg = language === 'tr' ? 'Tarama durduruldu. Veriler kaydedildi.' : 'Scan stopped. Data saved.';
     setCopilotText(stopMsg);
   };
@@ -596,6 +705,7 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         antennaType,
         resolution,
         theme,
+        saveLocation,
         setFrequency,
         setPulseVoltage,
         setGain,
@@ -603,6 +713,13 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAntennaType,
         setResolution,
         setTheme,
+        setSaveLocation,
+        audioAlertConfig,
+        setTargetAudioAlert,
+        playAudioAlert,
+        playBeepSound,
+        isDemoMode,
+        setIsDemoMode,
         copilotText,
         askCopilot
       }}

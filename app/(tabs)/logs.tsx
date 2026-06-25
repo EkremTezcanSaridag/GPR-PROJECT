@@ -17,6 +17,11 @@ export default function LogsScreen() {
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'png' | null>(null);
 
+  // Local state for export location selection modal
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [pendingLogId, setPendingLogId] = useState<string | null>(null);
+  const [pendingFormat, setPendingFormat] = useState<'pdf' | 'csv' | 'png' | null>(null);
+
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
 
@@ -231,22 +236,49 @@ export default function LogsScreen() {
     }
   });
 
-  const handleExport = async (format: 'pdf' | 'csv' | 'png', logId: string) => {
+  const handleExportClick = (format: 'pdf' | 'csv' | 'png', logId: string) => {
+    setPendingLogId(logId);
+    setPendingFormat(format);
+    setShowLocationPicker(true);
+  };
+
+  const handleExportExecute = async (locCode: 'local' | 'sd_card' | 'cloud' | 'documents') => {
+    setShowLocationPicker(false);
+    if (!pendingFormat || !pendingLogId) return;
+
+    const format = pendingFormat;
+    const logId = pendingLogId;
+
     setExportingId(logId);
     setExportFormat(format);
     try {
       const filename = await exportReport(format, logId);
+      
+      const locLabel = 
+        locCode === 'sd_card' ? (language === 'tr' ? 'SD Kart Bölümü' : 'SD Card Partition') :
+        locCode === 'cloud' ? (language === 'tr' ? 'Bulut Depolama Sunucusu' : 'Cloud Remote Server') :
+        locCode === 'documents' ? (language === 'tr' ? 'Belgeler Dizini' : 'Documents Directory') :
+        (language === 'tr' ? 'Dahili Bellek Klasörü' : 'Internal memory folder');
+
+      const locPrefix = 
+        locCode === 'sd_card' ? 'SD_CARD/GPR-Logs/' :
+        locCode === 'cloud' ? 'CLOUD/Uploads/' :
+        locCode === 'documents' ? 'Documents/' :
+        'InternalStorage/GPR-Logs/';
+
       Alert.alert(
-        language === 'tr' ? 'Başarılı' : 'Success',
+        language === 'tr' ? 'Rapor Kaydedildi' : 'Report Exported',
         language === 'tr' 
-          ? `Rapor başarıyla oluşturuldu ve cihazınıza kaydedildi:\n\n${filename}`
-          : `Report successfully generated and saved to device:\n\n${filename}`
+          ? `Dosya başarıyla oluşturuldu ve ${locLabel} üzerine depolandı:\n\n${locPrefix}${filename}`
+          : `File successfully generated and stored on ${locLabel}:\n\n${locPrefix}${filename}`
       );
     } catch (e) {
       console.log(e);
     } finally {
       setExportingId(null);
       setExportFormat(null);
+      setPendingFormat(null);
+      setPendingLogId(null);
     }
   };
 
@@ -272,6 +304,42 @@ export default function LogsScreen() {
                 ? `${exportFormat?.toUpperCase()} Raporu Oluşturuluyor...` 
                 : `Generating ${exportFormat?.toUpperCase()} Report...`}
             </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Save Destination Selection Overlay Modal */}
+      {showLocationPicker && (
+        <View style={styles.exportingContainer}>
+          <View style={[styles.exportingBox, { width: 320, padding: 16 }]}>
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800', marginBottom: 12, textAlign: 'center' }}>
+              {language === 'tr' ? 'KAYIT DİZİNİ SEÇİNİZ' : 'SELECT SAVE DESTINATION'}
+            </Text>
+            
+            <View style={{ gap: 8, width: '100%', marginBottom: 12 }}>
+              {[
+                { code: 'local' as const, label: language === 'tr' ? 'Dahili Depolama Belleği' : 'Internal Storage Volume', desc: 'InternalStorage/GPR-Logs/' },
+                { code: 'sd_card' as const, label: language === 'tr' ? 'Harici Micro-SD Kart' : 'External Micro-SD Card', desc: 'SD_CARD/GPR-Logs/' },
+                { code: 'cloud' as const, label: language === 'tr' ? 'Uzak Bulut Sunucusu' : 'Remote Cloud Server', desc: 'CLOUD/Uploads/' },
+                { code: 'documents' as const, label: language === 'tr' ? 'Sistem Belgeler Klasörü' : 'System Documents Folder', desc: 'Documents/' }
+              ].map((dest) => (
+                <TouchableOpacity 
+                  key={dest.code} 
+                  style={{ backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#374151', borderRadius: 8, padding: 8 }}
+                  onPress={() => handleExportExecute(dest.code)}
+                >
+                  <Text style={{ color: '#F59E0B', fontSize: 10.5, fontWeight: '700' }}>{dest.label}</Text>
+                  <Text style={{ color: '#9CA3AF', fontSize: 8.5, marginTop: 2 }}>{dest.desc}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={{ paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#EF4444', borderRadius: 6, width: '100%', alignItems: 'center' }} 
+              onPress={() => setShowLocationPicker(false)}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>{language === 'tr' ? 'İptal' : 'Cancel'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -332,15 +400,15 @@ export default function LogsScreen() {
 
                 {/* Export Buttons */}
                 <View style={styles.exportRow}>
-                  <TouchableOpacity style={styles.exportBtn} onPress={() => handleExport('pdf', log.id)}>
+                  <TouchableOpacity style={styles.exportBtn} onPress={() => handleExportClick('pdf', log.id)}>
                     <Ionicons name="document-text" size={10} color={isLight ? '#475569' : '#E2E8F0'} />
                     <Text style={styles.exportBtnText}>PDF</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.exportBtn} onPress={() => handleExport('csv', log.id)}>
+                  <TouchableOpacity style={styles.exportBtn} onPress={() => handleExportClick('csv', log.id)}>
                     <Ionicons name="grid" size={10} color={isLight ? '#475569' : '#E2E8F0'} />
                     <Text style={styles.exportBtnText}>CSV</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.exportBtn} onPress={() => handleExport('png', log.id)}>
+                  <TouchableOpacity style={styles.exportBtn} onPress={() => handleExportClick('png', log.id)}>
                     <Ionicons name="image" size={10} color={isLight ? '#475569' : '#E2E8F0'} />
                     <Text style={styles.exportBtnText}>PNG</Text>
                   </TouchableOpacity>

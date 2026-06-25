@@ -74,7 +74,7 @@ export default function TabLayout() {
                 case 'scan':
                   return <Ionicons name="pulse" size={20} color={color} />;
                 case 'material':
-                  return <Ionicons name="flask" size={20} color={color} />;
+                  return <Ionicons name="radio" size={20} color={color} />;
                 case 'logs':
                   return <Ionicons name="folder-open" size={20} color={color} />;
                 case 'settings':
@@ -91,7 +91,7 @@ export default function TabLayout() {
                 case 'scan':
                   return language === 'tr' ? 'Canlı Tarama' : language === 'de' ? 'Live-Scan' : language === 'fr' ? 'Scan' : language === 'ru' ? 'Сканирование' : language === 'ar' ? 'مسح' : 'Live Scan';
                 case 'material':
-                  return language === 'tr' ? 'Madde' : language === 'de' ? 'Material' : language === 'fr' ? 'Matière' : language === 'ru' ? 'Анализ' : language === 'ar' ? 'تحليل' : 'Analysis';
+                  return language === 'tr' ? 'GPR AI Analizi' : language === 'de' ? 'GPR AI Analizi' : language === 'fr' ? 'GPR AI Analyse' : language === 'ru' ? 'GPR AI Анализ' : language === 'ar' ? 'تحليل GPR AI' : 'GPR AI Analysis';
                 case 'logs':
                   return language === 'tr' ? 'Kayıtlar' : language === 'de' ? 'Protokoll' : language === 'fr' ? 'Registres' : language === 'ru' ? 'Журнал' : language === 'ar' ? 'السجلات' : 'Logs';
                 case 'settings':
