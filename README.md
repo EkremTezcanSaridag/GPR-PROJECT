@@ -1,4 +1,4 @@
-# AntiGravity AI GPR Suite
+# AI GPR Suite
 
 An enterprise-grade, AI-powered Ground Penetrating Radar (GPR) software suite designed for geophysics, utility mapping, archaeology, infrastructure inspection, cavity detection, and advanced subsurface analysis.
 
