@@ -33,5 +33,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: ['expo-router'],
   experiments: {
     typedRoutes: true,
+    baseUrl: '/GPR-PROJECT',
   },
 });
