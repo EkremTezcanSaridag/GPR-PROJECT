@@ -455,7 +455,7 @@ export default function ScanScreen() {
                           fontWeight="800" 
                           alignmentBaseline="middle"
                         >
-                          {depthVal.toFixed(1)}m
+                          {`${depthVal.toFixed(1)}m`}
                         </SvgText>
                       </G>
                     );
@@ -486,7 +486,7 @@ export default function ScanScreen() {
                           fontWeight="800" 
                           textAnchor="middle"
                         >
-                          {distanceVal.toFixed(1)}m
+                          {`${distanceVal.toFixed(1)}m`}
                         </SvgText>
                       </G>
                     );
