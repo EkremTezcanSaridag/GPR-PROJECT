@@ -350,6 +350,8 @@ export default function ScanScreen() {
 
   // Determine viewport width for SVGs on the right side panel
   const sideSvgWidth = SCREEN_WIDTH * 0.42 - 56;
+  const rxWaveWidth = isScanning ? (SCREEN_WIDTH - 180) * 0.6 : (SCREEN_WIDTH * 0.58 - 56);
+
 
   return (
     <View style={styles.container}>
@@ -392,13 +394,6 @@ export default function ScanScreen() {
           </View>
         </View>
 
-        {/* Quick Telemetry Strip */}
-        <View style={styles.telemetryStrip}>
-          <Text style={styles.telemetryText}>{t.signalStrength}: {Math.round(signalStrength)}%</Text>
-          <Text style={styles.telemetryText}>{t.signalQuality}: {Math.round(signalQuality)}%</Text>
-          <Text style={styles.telemetryText}>{t.penetrationDepth}: {penetrationDepth.toFixed(1)} m</Text>
-        </View>
-
         {/* Floating Smart Alert Panel */}
         {alerts.length > 0 && (
           <View style={styles.alertBar}>
@@ -411,10 +406,25 @@ export default function ScanScreen() {
 
         {/* Big GPR Scope Viewport (Increased height for Landscape screen) */}
         <View style={[styles.panelCard, { flex: 1, marginBottom: 0, padding: 8 }]}>
-          <View style={[styles.panelHeader, { marginBottom: 6 }]}>
-            <Text style={styles.panelTitle}>{t.radargram}</Text>
-            <Text style={styles.timerLabel}>{frequency} MHz | {antennaType}</Text>
+          <View style={[styles.panelHeader, { marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+            <View>
+              <Text style={styles.panelTitle}>{t.radargram}</Text>
+              <Text style={styles.timerLabel}>{frequency} MHz | {antennaType}</Text>
+            </View>
+            {/* Embedded Telemetry Info */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isLight ? '#F1F5F9' : '#2D3748', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
+              <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#3B82F6', marginRight: 10 }}>
+                ⚡ {Math.round(signalStrength)}%
+              </Text>
+              <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#10B981', marginRight: 10 }}>
+                📊 {Math.round(signalQuality)}%
+              </Text>
+              <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#06B6D4' }}>
+                📏 {penetrationDepth.toFixed(1)}m
+              </Text>
+            </View>
           </View>
+
 
           {/* Split-Screen: Vertical A-Scan Wiggle Trace (Left) + Depth Ruler + B-Scan Radargram with Horizontal Distance Ruler (Right) */}
           <View style={{ flexDirection: 'row', height: SCOPE_HEIGHT, width: '100%', backgroundColor: '#05070A', borderRadius: 8, overflow: 'hidden' }}>
@@ -524,6 +534,51 @@ export default function ScanScreen() {
           </View>
         </View>
       </View>
+
+      {/* Expanded Live Oscilloscope inside main viewport when scanning */}
+      {isScanning && (
+        <View style={[styles.panelCard, { marginTop: 12, padding: 10 }]}>
+          <Text style={styles.panelTitle}>📈 {t.transmitterPanel} & {t.receiverPanel} (LIVE OSCILLOSCOPE)</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            
+            {/* Receiver Live Waveform */}
+            <View style={{ flex: 0.6, marginRight: 10 }}>
+              <Text style={styles.waveformTitle}>{t.liveSignalStream} (RX)</Text>
+              <View style={{ height: 80, backgroundColor: '#090D16', borderRadius: 8, overflow: 'hidden', padding: 4 }}>
+                <Svg width="100%" height="100%">
+                  <Path 
+                    d={makeSvgPath(rxWaveform, 70, rxWaveWidth, 1.2)} 
+                    fill="none" 
+                    stroke="#10B981" 
+                    strokeWidth="1.5" 
+                  />
+                  <Line x1="0" y1="35" x2={rxWaveWidth} y2="35" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
+                </Svg>
+              </View>
+            </View>
+
+            {/* FFT Spectrum */}
+            <View style={{ flex: 0.4 }}>
+              <Text style={styles.waveformTitle}>{t.fftSpectrum}</Text>
+              <View style={{ height: 80, backgroundColor: '#090D16', borderRadius: 8, overflow: 'hidden', flexDirection: 'row', alignItems: 'flex-end', padding: 4 }}>
+                {fftSpectrum.map((val, idx) => (
+                  <View 
+                    key={idx} 
+                    style={{ 
+                      flex: 1, 
+                      backgroundColor: '#06B6D4', 
+                      height: `${val}%`, 
+                      marginHorizontal: 0.5,
+                      borderRadius: 1 
+                    }} 
+                  />
+                ))}
+              </View>
+            </View>
+
+          </View>
+        </View>
+      )}
 
       </View>
 
