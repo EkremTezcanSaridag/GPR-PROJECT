@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Rect, G, Line, Circle, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
@@ -65,6 +65,7 @@ export default function ScanScreen() {
   const [showAiBScan, setShowAiBScan] = useState(false);
   const [showInstantDetector, setShowInstantDetector] = useState(false);
   const [showPip, setShowPip] = useState(true);
+  const [showResultsModal, setShowResultsModal] = useState(false);
   const lastAnomaliesCount = useRef(0);
 
   useEffect(() => {
@@ -108,8 +109,9 @@ export default function ScanScreen() {
       if (dist < 0.6) {
         activeInstantTarget = target;
         instantProximity = (0.6 - dist) / 0.6; // 0 to 1
-        const isMetallic = ['gold', 'metal', 'pipe', 'cable'].includes(target.type);
-        instantStrength = Math.round(instantProximity * (isMetallic ? 98 : 45));
+        const isPreciousMetal = ['gold', 'metal'].includes(target.type);
+        // Sadece metal/altın gibi maddelere tepki ver, boru/tesisat/boşluk için 0 yap (tepki verme, ses çıkarma)
+        instantStrength = isPreciousMetal ? Math.round(instantProximity * 98) : 0;
       }
     }
   }
@@ -165,11 +167,11 @@ export default function ScanScreen() {
       const x = startX + (i / steps) * width;
       const dist = windowStart + (i / steps) * rangeSpan;
       
-      // Real ground stratification has overlapping micro-undulations and noise
+      // High-frequency speckle noise mixed with slow waves for real GPR texture
       const wave = Math.sin(dist * freq) * amp 
-                 + Math.cos(dist * freq * 2.2) * (amp * 0.4) 
-                 + Math.sin(dist * freq * 4.7) * (amp * 0.15)
-                 + Math.sin(dist * 18) * 0.8;
+                 + Math.sin(dist * 120) * (amp * 0.6) // high freq speckle
+                 + Math.cos(dist * 350) * (amp * 0.3) // very high freq
+                 + Math.sin(dist * 25) * 0.5;
                  
       const y = baseY + wave;
       points.push(`${i === 0 ? 'M' : 'L'} ${x} ${y}`);
@@ -766,10 +768,10 @@ export default function ScanScreen() {
               <View style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <Svg width="100%" height="100%" viewBox="0 0 450 160">
                   {isScanning && (() => {
-                    let cPrimary = '#D97706'; // copper
-                    let cSecondary = '#F59E0B'; // light copper
-                    let cDark = '#1E293B';
-                    let cBg = '#090D16';
+                    let cPrimary = '#FFFFFF'; // white for strong reflections
+                    let cSecondary = '#CCCCCC'; // light gray
+                    let cDark = '#000000'; // black
+                    let cBg = '#808080'; // medium gray background
                     
                     if (customColormap === 'thermal') {
                       cPrimary = '#EF4444'; // red
@@ -788,11 +790,20 @@ export default function ScanScreen() {
                         {/* Define gradients */}
                         <Defs>
                           <LinearGradient id="rawRadargramGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <Stop offset="0%" stopColor={cBg} stopOpacity={1} />
-                            <Stop offset="25%" stopColor={cBg} stopOpacity={0.9} />
-                            <Stop offset="50%" stopColor={cDark} stopOpacity={0.6} />
-                            <Stop offset="85%" stopColor={cBg} stopOpacity={0.9} />
-                            <Stop offset="100%" stopColor="#02040a" stopOpacity={1} />
+                            {customColormap === 'classic' ? (
+                              <>
+                                <Stop offset="0%" stopColor={cBg} stopOpacity={1} />
+                                <Stop offset="100%" stopColor={cBg} stopOpacity={1} />
+                              </>
+                            ) : (
+                              <>
+                                <Stop offset="0%" stopColor={cBg} stopOpacity={1} />
+                                <Stop offset="25%" stopColor={cBg} stopOpacity={0.9} />
+                                <Stop offset="50%" stopColor={cDark} stopOpacity={0.6} />
+                                <Stop offset="85%" stopColor={cBg} stopOpacity={0.9} />
+                                <Stop offset="100%" stopColor="#02040a" stopOpacity={1} />
+                              </>
+                            )}
                           </LinearGradient>
                         </Defs>
 
@@ -890,10 +901,29 @@ export default function ScanScreen() {
                                 />
                               ))}
 
-                              {/* 1. Geological Stratification Layers with Noise & Wave Interference */}
-                              <Path d={getSoilLinePathRight(35, 1.2, 5)} fill="none" stroke={cDark} strokeWidth="1.6" opacity="0.4" />
-                              <Path d={getSoilLinePathRight(70, 0.9, 7)} fill="none" stroke={cPrimary} strokeWidth="1.0" opacity="0.25" />
-                              <Path d={getSoilLinePathRight(110, 0.6, 9)} fill="none" stroke={cDark} strokeWidth="1.4" opacity="0.3" />
+                              {/* 0. Direct Wave / Ground Coupling Band */}
+                              <Rect x="230" y="0" width="220" height="4" fill="#000000" />
+                              <Rect x="230" y="4" width="220" height="2" fill="#FFFFFF" />
+                              <Rect x="230" y="6" width="220" height="2" fill="#000000" />
+
+                              {/* 1. DENSE Realistic Geological Stratification / Background Noise */}
+                              {Array.from({ length: 80 }).map((_, i) => {
+                                const baseY = 10 + i * 2.0;
+                                const freq = 1.0 + (i % 9) * 0.5;
+                                const amp = 1.0 + (i % 4) * 0.5;
+                                const isBlack = i % 2 === 0;
+                                return (
+                                  <Path 
+                                    key={`strata-right-${i}`} 
+                                    d={getSoilLinePathRight(baseY, freq, amp)} 
+                                    fill="none" 
+                                    stroke={isBlack ? cDark : cPrimary} 
+                                    strokeWidth="1.2" 
+                                    strokeDasharray={`${1 + (i % 4)} ${1 + (i % 2)}`}
+                                    opacity={0.4 + (i % 3) * 0.2} 
+                                  />
+                                );
+                              })}
 
                               {/* 2. Subsurface Pebbles / Clutter Noise (Deterministic small hyperbolas) */}
                               {getClutterReflectors(windowStart, windowEnd).map((clutter, idx) => {
@@ -908,8 +938,8 @@ export default function ScanScreen() {
                                     d={getClutterHyperbolaPath(xPosRight, yPos, clutter.size)}
                                     fill="none"
                                     stroke={cSecondary}
-                                    strokeWidth="0.7"
-                                    opacity={clutter.intensity}
+                                    strokeWidth="1.2"
+                                    opacity={clutter.intensity * 1.5}
                                   />
                                 );
                               })}
@@ -945,12 +975,12 @@ export default function ScanScreen() {
                                 
                                 return (
                                   <G key={`target-right-${idx}`}>
-                                    {/* Alternating wave phases */}
-                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, -4)} fill="none" stroke={cDark} strokeWidth="1.2" opacity="0.45" />
-                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, -1)} fill="none" stroke={cSecondary} strokeWidth="2.4" opacity="0.85" />
-                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, 2)} fill="none" stroke={cBg} strokeWidth="1.6" opacity="0.95" />
-                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, 5)} fill="none" stroke={cPrimary} strokeWidth="2.0" opacity="0.75" />
-                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, 8)} fill="none" stroke={cDark} strokeWidth="1.0" opacity="0.4" />
+                                    {/* Alternating wave phases (Crisp B/W for real GPR look) */}
+                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, -4)} fill="none" stroke={cDark} strokeWidth="2.0" opacity="0.9" />
+                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, -1.5)} fill="none" stroke={cPrimary} strokeWidth="2.5" opacity="1.0" />
+                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, 1.5)} fill="none" stroke={cDark} strokeWidth="2.5" opacity="1.0" />
+                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, 4.5)} fill="none" stroke={cPrimary} strokeWidth="2.5" opacity="1.0" />
+                                    <Path d={getRealisticHyperbolaPath(xPosRight, yPos, 7.5)} fill="none" stroke={cDark} strokeWidth="2.0" opacity="0.9" />
                                   </G>
                                 );
                               })}
@@ -975,10 +1005,29 @@ export default function ScanScreen() {
                               />
                             ))}
 
-                            {/* 1. Geological Stratification Layers with Noise & Wave Interference */}
-                            <Path d={getSoilLinePathFull(35, 1.2, 5)} fill="none" stroke={cDark} strokeWidth="1.6" opacity="0.4" />
-                            <Path d={getSoilLinePathFull(70, 0.9, 7)} fill="none" stroke={cPrimary} strokeWidth="1.0" opacity="0.25" />
-                            <Path d={getSoilLinePathFull(110, 0.6, 9)} fill="none" stroke={cDark} strokeWidth="1.4" opacity="0.3" />
+                            {/* 0. Direct Wave / Ground Coupling Band */}
+                            <Rect x="0" y="0" width="450" height="4" fill="#000000" />
+                            <Rect x="0" y="4" width="450" height="2" fill="#FFFFFF" />
+                            <Rect x="0" y="6" width="450" height="2" fill="#000000" />
+
+                            {/* 1. DENSE Realistic Geological Stratification / Background Noise */}
+                            {Array.from({ length: 80 }).map((_, i) => {
+                              const baseY = 10 + i * 2.0;
+                              const freq = 1.0 + (i % 9) * 0.5;
+                              const amp = 1.0 + (i % 4) * 0.5;
+                              const isBlack = i % 2 === 0;
+                              return (
+                                <Path 
+                                  key={`strata-full-${i}`} 
+                                  d={getSoilLinePathFull(baseY, freq, amp)} 
+                                  fill="none" 
+                                  stroke={isBlack ? cDark : cPrimary} 
+                                  strokeWidth="1.2" 
+                                  strokeDasharray={`${1 + (i % 4)} ${1 + (i % 2)}`}
+                                  opacity={0.4 + (i % 3) * 0.2} 
+                                />
+                              );
+                            })}
 
                             {/* 2. Subsurface Pebbles / Clutter Noise (Deterministic small hyperbolas) */}
                             {getClutterReflectors(windowStart, windowEnd).map((clutter, idx) => {
@@ -993,8 +1042,8 @@ export default function ScanScreen() {
                                   d={getClutterHyperbolaPath(xPosFull, yPos, clutter.size)}
                                   fill="none"
                                   stroke={cSecondary}
-                                  strokeWidth="0.7"
-                                  opacity={clutter.intensity}
+                                  strokeWidth="1.2"
+                                  opacity={clutter.intensity * 1.5}
                                 />
                               );
                             })}
@@ -1030,12 +1079,12 @@ export default function ScanScreen() {
                               
                               return (
                                 <G key={`target-full-${idx}`}>
-                                  {/* Alternating wave phases */}
-                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, -4)} fill="none" stroke={cDark} strokeWidth="1.2" opacity="0.45" />
-                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, -1)} fill="none" stroke={cSecondary} strokeWidth="2.4" opacity="0.85" />
-                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, 2)} fill="none" stroke={cBg} strokeWidth="1.6" opacity="0.95" />
-                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, 5)} fill="none" stroke={cPrimary} strokeWidth="2.0" opacity="0.75" />
-                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, 8)} fill="none" stroke={cDark} strokeWidth="1.0" opacity="0.4" />
+                                  {/* Alternating wave phases (Crisp B/W for real GPR look) */}
+                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, -4)} fill="none" stroke={cDark} strokeWidth="2.0" opacity="0.9" />
+                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, -1.5)} fill="none" stroke={cPrimary} strokeWidth="2.5" opacity="1.0" />
+                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, 1.5)} fill="none" stroke={cDark} strokeWidth="2.5" opacity="1.0" />
+                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, 4.5)} fill="none" stroke={cPrimary} strokeWidth="2.5" opacity="1.0" />
+                                  <Path d={getRealisticHyperbolaPath(xPosFull, yPos, 7.5)} fill="none" stroke={cDark} strokeWidth="2.0" opacity="0.9" />
                                 </G>
                               );
                             })}
@@ -1282,9 +1331,7 @@ export default function ScanScreen() {
                   style={[styles.actionBtn, { backgroundColor: '#EF4444' }]} 
                   onPress={() => {
                     stopScanning();
-                    setTimeout(() => {
-                      router.push('/material');
-                    }, 500);
+                    setShowResultsModal(true);
                   }}
                 >
                   <Ionicons name="stop" size={16} color="#FFFFFF" />
@@ -1370,6 +1417,54 @@ export default function ScanScreen() {
           </View>
         </Animated.View>
       )}
+      {/* 8. RESULTS MODAL (Triggered when scan stops) */}
+      <Modal visible={showResultsModal} transparent={true} animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '60%', backgroundColor: '#0D111A', borderRadius: 8, borderWidth: 1, borderColor: '#374151', padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#1F2937', paddingBottom: 10, marginBottom: 15 }}>
+              <Text style={{ color: '#F9FAFB', fontSize: 16, fontWeight: 'bold' }}>
+                {language === 'tr' ? 'Tarama Sonuçları' : 'Scan Results'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowResultsModal(false)}>
+                <Ionicons name="close" size={24} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+            
+            {detectedAnomalies.length > 0 ? (
+              <ScrollView style={{ maxHeight: 300 }}>
+                {detectedAnomalies.map((anom, idx) => (
+                  <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#1E293B', padding: 12, borderRadius: 6, marginBottom: 8, borderWidth: 1, borderColor: '#334155' }}>
+                    <View>
+                      <Text style={{ color: '#10B981', fontWeight: 'bold', fontSize: 14 }}>{anom.material}</Text>
+                      <Text style={{ color: '#9CA3AF', fontSize: 12 }}>{anom.dimensions}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ color: '#F9FAFB', fontSize: 14, fontWeight: 'bold' }}>{anom.depth}m</Text>
+                      <Text style={{ color: '#F59E0B', fontSize: 12 }}>%{anom.confidence} {language === 'tr' ? 'Güven' : 'Confidence'}</Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
+                <Text style={{ color: '#9CA3AF', marginTop: 10, textAlign: 'center' }}>
+                  {language === 'tr' ? 'Herhangi bir anomali tespit edilemedi. Zemin temiz.' : 'No anomalies detected. Clear soil.'}
+                </Text>
+              </View>
+            )}
+            
+            <TouchableOpacity 
+              style={{ marginTop: 20, backgroundColor: '#3B82F6', paddingVertical: 12, borderRadius: 6, alignItems: 'center' }}
+              onPress={() => setShowResultsModal(false)}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+                {language === 'tr' ? 'Kapat' : 'Close'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
     </View>
   );

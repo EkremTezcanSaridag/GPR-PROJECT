@@ -74,25 +74,6 @@ export default function HomeScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    if (diagnosticsStatus === 'completed' && !hasApprovedDiagnostics) {
-      const title = language === 'tr' ? 'Teşhis Tamamlandı' : 'Diagnostics Completed';
-      const msg = language === 'tr' ? 'Donanım testi başarıyla tamamlandı. Cihaz çalışmaya hazır.' : 'Hardware diagnostics completed successfully. Unit ready for operation.';
-      if (Platform.OS === 'web') {
-        window.alert(`${title}\n\n${msg}`);
-        setHasApprovedDiagnostics(true);
-      } else {
-        const { Alert } = require('react-native');
-        Alert.alert(
-          title,
-          msg,
-          [{ text: language === 'tr' ? 'Onayla ve Devam Et' : 'Approve & Continue', onPress: () => setHasApprovedDiagnostics(true) }],
-          { cancelable: false }
-        );
-      }
-    }
-  }, [diagnosticsStatus, hasApprovedDiagnostics, language]);
-
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
 
@@ -340,6 +321,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: '#070913',
     paddingLeft: 75, // Clear Left Sidebar
     flexDirection: 'row',

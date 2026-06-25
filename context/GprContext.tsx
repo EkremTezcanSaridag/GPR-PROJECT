@@ -572,43 +572,8 @@ export const GprProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       addLog(newLog);
-
-      // Voice readout of detected anomalies just like in the demo
-      if (detectedAnomalies.length > 0) {
-        const count = detectedAnomalies.length;
-        let speakText = '';
-        if (language === 'tr') {
-          speakText = `Tarama tamamlandı. Yapay zeka analizi ile toplam ${count} adet zemin altı anomali tespit edildi. `;
-          detectedAnomalies.forEach((anom, idx) => {
-            speakText += `${idx + 1} nci sırada, ${anom.depth} metre derinlikte ${anom.material}. `;
-          });
-        } else {
-          speakText = `Scan complete. Detected ${count} subsurface anomalies with AI analysis. `;
-          detectedAnomalies.forEach((anom, idx) => {
-            speakText += `Number ${idx + 1}, ${anom.material} at ${anom.depth} meters deep. `;
-          });
-        }
-        
-        setTimeout(() => {
-          if (Platform.OS === 'web') {
-            webSpeak(speakText, language === 'tr' ? 'tr-TR' : 'en-US');
-          } else if (Speech) {
-            Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
-          }
-        }, 800);
-      } else {
-        const speakText = language === 'tr'
-          ? 'Tarama tamamlandı. Herhangi bir zemin altı anomali tespit edilemedi.'
-          : 'Scan complete. No subsurface anomalies detected.';
-        setTimeout(() => {
-          if (Platform.OS === 'web') {
-            webSpeak(speakText, language === 'tr' ? 'tr-TR' : 'en-US');
-          } else if (Speech) {
-            Speech.speak(speakText, { language: language === 'tr' ? 'tr-TR' : 'en-US' });
-          }
-        }, 800);
-      }
     }
+
     setIsScanning(false);
     setIsPaused(false);
     setIsDemoMode(false); // Switch to live/scanned data view automatically

@@ -1,0 +1,37 @@
+GPR Projesi Donanım ve Sensör Gereksinimleri
+==============================================
+
+Bu belge, GPR (Ground Penetrating Radar) yazılımının verileri fiziksel olarak doğru şekilde alabilmesi için gereken donanım bileşenlerini listeler.
+
+1. GÜÇ YÖNETİM VE BESLEME DEVRELERİ (Power Management)
+------------------------------------------------------
+* Lityum İyon/Polimer Pil Paketi (Battery Cells): Sahada uzun süreli çalışmayı sağlayacak yüksek kapasiteli bataryalar.
+* BMS (Battery Management System): Pillerin şarj, deşarj dengesini ve güvenliğini sağlamak için.
+* Regülatörler ve DC-DC Dönüştürücüler (Boost/Buck Converters): 
+  - Mikrodenetleyici ve sensörler için 3.3V ve 5V kademeleri.
+  - Puls jeneratörleri için gerekli voltaj regülatörleri.
+  - Verici anteni sürmek (çığ transistörleri vb. için) 100V, 200V veya daha yüksek gerilimlere çıkan High-Voltage Boost devreleri.
+
+2. GPR VERİCİ (Transmitter - TX) KATI
+------------------------------------------------------
+* Puls Jeneratör Devresi (Pulse Generator): Çok kısa süreli (nanosaniye veya pikosaniye seviyesinde) yüksek genlikli elektromanyetik palslar üretir (Avalanche/Çığ Transistörler veya SRD).
+* Verici Anten (TX Antenna): Geniş bantlı (UWB - Ultra Wideband) elektromanyetik sinyal yayabilen Bow-tie (Papyon) veya Dipol tipinde fiziksel bakır anten.
+
+3. GPR ALICI (Receiver - RX) KATI
+------------------------------------------------------
+* Alıcı Anten (RX Antenna): Verici anten ile aynı karakteristiğe sahip ikinci bir anten.
+* LNA (Low Noise Amplifier): Yansıyan zayıf sinyallerin gürültüye boğulmadan güçlendirilmesini sağlayan RF yükselteç çipleri.
+* Örnekleme Devresi (Sampler / ADC): GHz seviyesindeki sinyalleri dijitale çevirmek için Equivalent Time Sampling (ETS) mantığıyla çalışan devreler veya ultra-yüksek hızlı ADC bileşenleri.
+* FFT ve Spektrum Analiz İşlemcisi: Alınan analog sinyalleri işlemek için (genellikle FPGA veya güçlü DSP çipleriyle).
+
+4. KONUM VE HAREKET SENSÖRLERİ (Tracking & Positioning)
+------------------------------------------------------
+* RTK GPS / GNSS Modülü: Santimetre hassasiyetinde konum veren, çift frekanslı RTK (Real-Time Kinematic) alıcısı (Örn: u-blox ZED-F9P) ve uygun GNSS anteni.
+* IMU (Inertial Measurement Unit): Cihazın eğimini, yönelimini ve ivmesini ölçen 9 eksenli sensör modülü (Jiroskop, İvmeölçer, Manyetometre - Örn: BNO085 veya MPU9250).
+* Tekerlek Enkoderi (Rotary Encoder) / Odometre: GPR arabası/kızağı sürüklendikçe tam olarak kaç cm ilerlediğini algılayan mesafe sensörü. Sinyallerin eşit mesafelerde yollanmasını tetikler (Trigger).
+
+5. KONTROL, VERİ İŞLEME VE İLETİŞİM (MCU & Communication)
+------------------------------------------------------
+* Mikrodenetleyici (MCU) veya FPGA: Tüm zamanlama görevlerini yönetecek beyin (Örn: STM32 serisi bir ARM Cortex-M veya FPGA).
+* Kablosuz Haberleşme Modülü: Canlı osiloskop sinyallerini ve radargramı bilgisayara/tablete aktarmak için yüksek bant genişliğine sahip Wi-Fi (Örn: ESP32) veya yüksek hızlı Bluetooth (BLE) modülü.
+* Yerel Depolama (SD Kart / Flash Hafıza Modülü): Uygulamayla bağlantı kopsa bile cihazın ham veriyi kaydetmesini sağlayan hafıza.

@@ -141,6 +141,7 @@ export default function TabLayout() {
       tabBar={(props) => <CustomSideBar {...props} />}
       screenOptions={{
         headerShown: false,
+        tabBarStyle: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 75, borderTopWidth: 0, elevation: 0 },
       }}
     >
       <Tabs.Screen name="index" />
