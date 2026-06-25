@@ -318,7 +318,7 @@ export default function ScanScreen() {
     if (!radargramData || radargramData.length === 0) return '';
     const lastColIndex = radargramData[0].length - 1;
     const traceData = radargramData.map(row => row[lastColIndex]);
-    const height = SCOPE_HEIGHT; // Height of GPR Scope in landscape
+    const height = SCOPE_HEIGHT - 20; // Align with B-scan grid height
     const width = 60;
     const centerX = width / 2;
     const stepY = height / (traceData.length - 1);
@@ -354,7 +354,7 @@ export default function ScanScreen() {
   return (
     <View style={styles.container}>
       {/* 1. LEFT MAIN VIEWPORT (Scope Display & Controls) */}
-      <View style={styles.mainViewport}>
+      <View style={[styles.mainViewport, isScanning && { flex: 1, borderRightWidth: 0 }]}>
         
         {/* Top Control Bar */}
         <View style={styles.controlPanel}>
@@ -367,6 +367,13 @@ export default function ScanScreen() {
                 </TouchableOpacity>
               ) : (
                 <>
+                  <TouchableOpacity 
+                    style={[styles.ctrlBtn, { backgroundColor: '#475569', marginRight: 8 }]} 
+                    onPress={stopScanning}
+                  >
+                    <Ionicons name="arrow-back" size={14} color="#FFFFFF" />
+                    <Text style={styles.ctrlBtnText}>{language === 'tr' ? 'Geri' : 'Back'}</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity style={[styles.ctrlBtn, styles.pauseBtn]} onPress={pauseScanning}>
                     <Ionicons name={isPaused ? 'play' : 'pause'} size={14} color="#FFFFFF" />
                     <Text style={styles.ctrlBtnText}>{isPaused ? t.startScan : t.pauseScan}</Text>
@@ -409,49 +416,86 @@ export default function ScanScreen() {
             <Text style={styles.timerLabel}>{frequency} MHz | {antennaType}</Text>
           </View>
 
-          {/* Split-Screen: Vertical A-Scan Wiggle Trace (Left) + Depth Ruler + B-Scan Radargram (Right) */}
+          {/* Split-Screen: Vertical A-Scan Wiggle Trace (Left) + Depth Ruler + B-Scan Radargram with Horizontal Distance Ruler (Right) */}
           <View style={{ flexDirection: 'row', height: SCOPE_HEIGHT, width: '100%', backgroundColor: '#05070A', borderRadius: 8, overflow: 'hidden' }}>
             
             {/* Vertical A-Scan Signal Area */}
-            <View style={{ width: 60, height: SCOPE_HEIGHT, backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937', paddingVertical: 2 }}>
-              <Svg width="100%" height="100%">
-                <Line x1="30" y1="0" x2="30" y2={SCOPE_HEIGHT} stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
-                <Path 
-                  d={getVerticalAScanPath()} 
-                  fill="none" 
-                  stroke="#3B82F6" 
-                  strokeWidth="2" 
-                />
-              </Svg>
+            <View style={{ width: 60, height: '100%', backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937' }}>
+              <View style={{ height: 20 }} /> {/* Alignment spacer */}
+              <View style={{ flex: 1, paddingVertical: 2 }}>
+                <Svg width="100%" height="100%">
+                  <Line x1="30" y1="0" x2="30" y2={SCOPE_HEIGHT - 20} stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
+                  <Path 
+                    d={getVerticalAScanPath()} 
+                    fill="none" 
+                    stroke="#3B82F6" 
+                    strokeWidth="2" 
+                  />
+                </Svg>
+              </View>
             </View>
 
             {/* Depth Scale Ruler (Ölçek) */}
-            <View style={{ width: 35, height: SCOPE_HEIGHT, backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937', paddingVertical: 4 }}>
-              <Svg width="100%" height="100%">
-                {Array.from({ length: 5 }).map((_, idx) => {
-                  const yVal = (idx / 4) * (SCOPE_HEIGHT - 12) + 6;
-                  const depthVal = (idx / 4) * penetrationDepth;
-                  return (
-                    <G key={idx}>
-                      <Line x1="0" y1={yVal} x2="5" y2={yVal} stroke="#9CA3AF" strokeWidth="1" />
-                      <SvgText 
-                        x="9" 
-                        y={yVal} 
-                        fill="#9CA3AF" 
-                        fontSize="8" 
-                        fontWeight="800" 
-                        alignmentBaseline="middle"
-                      >
-                        {depthVal.toFixed(1)}m
-                      </SvgText>
-                    </G>
-                  );
-                })}
-              </Svg>
+            <View style={{ width: 35, height: '100%', backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937' }}>
+              <View style={{ height: 20 }} /> {/* Alignment spacer */}
+              <View style={{ flex: 1, paddingVertical: 4 }}>
+                <Svg width="100%" height="100%">
+                  {Array.from({ length: 5 }).map((_, idx) => {
+                    const gridHeight = SCOPE_HEIGHT - 20;
+                    const yVal = (idx / 4) * (gridHeight - 12) + 6;
+                    const depthVal = (idx / 4) * penetrationDepth;
+                    return (
+                      <G key={idx}>
+                        <Line x1="0" y1={yVal} x2="5" y2={yVal} stroke="#9CA3AF" strokeWidth="1" />
+                        <SvgText 
+                          x="9" 
+                          y={yVal} 
+                          fill="#9CA3AF" 
+                          fontSize="8" 
+                          fontWeight="800" 
+                          alignmentBaseline="middle"
+                        >
+                          {depthVal.toFixed(1)}m
+                        </SvgText>
+                      </G>
+                    );
+                  })}
+                </Svg>
+              </View>
             </View>
 
-            {/* Radargram B-Scan Grid */}
-            <View style={{ flex: 1, flexDirection: 'row', height: SCOPE_HEIGHT, position: 'relative' }}>
+            {/* Radargram B-Scan Grid Area with Horizontal Distance Ruler */}
+            <View style={{ flex: 1, flexDirection: 'column', height: '100%' }}>
+              
+              {/* Horizontal Distance Ruler at the top */}
+              <View style={{ height: 20, width: '100%', backgroundColor: '#090D16', borderBottomWidth: 1, borderBottomColor: '#1F2937', paddingHorizontal: 2 }}>
+                <Svg width="100%" height="100%">
+                  {Array.from({ length: 6 }).map((_, idx) => {
+                    const xPercent = (idx / 5) * 100;
+                    const totalDistance = isScanning ? Math.max(5.0, scanTime * 0.15) : 5.0;
+                    const startDist = isScanning ? Math.max(0, scanTime * 0.15 - 5.0) : 0;
+                    const distanceVal = startDist + (idx / 5) * (totalDistance - startDist);
+                    return (
+                      <G key={idx}>
+                        <Line x1={`${xPercent}%`} y1="12" x2={`${xPercent}%`} y2="20" stroke="#9CA3AF" strokeWidth="1" />
+                        <SvgText 
+                          x={`${xPercent}%`} 
+                          y="6" 
+                          fill="#9CA3AF" 
+                          fontSize="8" 
+                          fontWeight="800" 
+                          textAnchor="middle"
+                        >
+                          {distanceVal.toFixed(1)}m
+                        </SvgText>
+                      </G>
+                    );
+                  })}
+                </Svg>
+              </View>
+
+              {/* Radargram B-Scan Grid */}
+              <View style={{ flex: 1, flexDirection: 'row', position: 'relative' }}>
               {radargramData[0].map((_, colIndex) => (
                 <View key={colIndex} style={styles.radarColumn}>
                   {radargramData.map((row, rowIndex) => (
@@ -483,14 +527,15 @@ export default function ScanScreen() {
       </View>
 
       {/* 2. RIGHT SIDE PANEL VIEWPORT (Telemetry, Oscilloscopes, 3D, Copilot) */}
-      <View style={styles.sideViewport}>
-        
-        {/* Navigation Tabs for Right Panel */}
-        <View style={styles.sideTabsContainer}>
-          <TouchableOpacity 
-            style={[styles.sideTabItem, activeSideTab === 'telemetry' && styles.activeSideTabItem]}
-            onPress={() => setActiveSideTab('telemetry')}
-          >
+      {!isScanning && (
+        <View style={styles.sideViewport}>
+          
+          {/* Navigation Tabs for Right Panel */}
+          <View style={styles.sideTabsContainer}>
+            <TouchableOpacity 
+              style={[styles.sideTabItem, activeSideTab === 'telemetry' && styles.activeSideTabItem]}
+              onPress={() => setActiveSideTab('telemetry')}
+            >
             <Ionicons name="warning-outline" size={16} color={activeSideTab === 'telemetry' ? '#3B82F6' : '#9CA3AF'} />
             <Text style={[styles.sideTabText, activeSideTab === 'telemetry' && styles.activeSideTabText]}>{language === 'tr' ? 'Bulgular' : 'Detections'}</Text>
           </TouchableOpacity>
@@ -703,6 +748,7 @@ export default function ScanScreen() {
 
         </ScrollView>
       </View>
+      )}
     </View>
   );
 }
