@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Rect, G, Line, Circle } from 'react-native-svg';
+import Svg, { Path, Rect, G, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { useLanguage } from '../../context/LanguageContext';
 import { useGpr, Anomaly } from '../../context/GprContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SCOPE_HEIGHT = 200;
+
 
 export default function ScanScreen() {
   const { t, language } = useLanguage();
@@ -316,7 +318,7 @@ export default function ScanScreen() {
     if (!radargramData || radargramData.length === 0) return '';
     const lastColIndex = radargramData[0].length - 1;
     const traceData = radargramData.map(row => row[lastColIndex]);
-    const height = 240; // Height of GPR Scope in landscape
+    const height = SCOPE_HEIGHT; // Height of GPR Scope in landscape
     const width = 60;
     const centerX = width / 2;
     const stepY = height / (traceData.length - 1);
@@ -407,13 +409,13 @@ export default function ScanScreen() {
             <Text style={styles.timerLabel}>{frequency} MHz | {antennaType}</Text>
           </View>
 
-          {/* Split-Screen: Vertical A-Scan Wiggle Trace (Left) + B-Scan Radargram (Right) */}
-          <View style={{ flexDirection: 'row', flex: 1, backgroundColor: '#05070A', borderRadius: 8, overflow: 'hidden' }}>
+          {/* Split-Screen: Vertical A-Scan Wiggle Trace (Left) + Depth Ruler + B-Scan Radargram (Right) */}
+          <View style={{ flexDirection: 'row', height: SCOPE_HEIGHT, width: '100%', backgroundColor: '#05070A', borderRadius: 8, overflow: 'hidden' }}>
             
             {/* Vertical A-Scan Signal Area */}
-            <View style={{ width: 60, height: '100%', backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937', paddingVertical: 2 }}>
+            <View style={{ width: 60, height: SCOPE_HEIGHT, backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937', paddingVertical: 2 }}>
               <Svg width="100%" height="100%">
-                <Line x1="30" y1="0" x2="30" y2="240" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
+                <Line x1="30" y1="0" x2="30" y2={SCOPE_HEIGHT} stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
                 <Path 
                   d={getVerticalAScanPath()} 
                   fill="none" 
@@ -423,8 +425,33 @@ export default function ScanScreen() {
               </Svg>
             </View>
 
+            {/* Depth Scale Ruler (Ölçek) */}
+            <View style={{ width: 35, height: SCOPE_HEIGHT, backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937', paddingVertical: 4 }}>
+              <Svg width="100%" height="100%">
+                {Array.from({ length: 5 }).map((_, idx) => {
+                  const yVal = (idx / 4) * (SCOPE_HEIGHT - 12) + 6;
+                  const depthVal = (idx / 4) * penetrationDepth;
+                  return (
+                    <G key={idx}>
+                      <Line x1="0" y1={yVal} x2="5" y2={yVal} stroke="#9CA3AF" strokeWidth="1" />
+                      <SvgText 
+                        x="9" 
+                        y={yVal} 
+                        fill="#9CA3AF" 
+                        fontSize="8" 
+                        fontWeight="800" 
+                        alignmentBaseline="middle"
+                      >
+                        {depthVal.toFixed(1)}m
+                      </SvgText>
+                    </G>
+                  );
+                })}
+              </Svg>
+            </View>
+
             {/* Radargram B-Scan Grid */}
-            <View style={{ flex: 1, flexDirection: 'row', height: '100%', position: 'relative' }}>
+            <View style={{ flex: 1, flexDirection: 'row', height: SCOPE_HEIGHT, position: 'relative' }}>
               {radargramData[0].map((_, colIndex) => (
                 <View key={colIndex} style={styles.radarColumn}>
                   {radargramData.map((row, rowIndex) => (
