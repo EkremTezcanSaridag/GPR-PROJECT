@@ -331,6 +331,24 @@ export default function ScanScreen() {
     }).join(' ');
   };
 
+  const getVerticalAScanPath = () => {
+    if (!radargramData || radargramData.length === 0) return '';
+    const lastColIndex = radargramData[0].length - 1;
+    const traceData = radargramData.map(row => row[lastColIndex]);
+    const height = 180;
+    const width = 60;
+    const centerX = width / 2;
+    const stepY = height / (traceData.length - 1);
+
+    return traceData.map((val, i) => {
+      const offset = (val - 60) * 0.45;
+      const x = centerX + Math.min(centerX - 4, Math.max(-centerX + 4, offset));
+      const y = i * stepY;
+      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+    }).join(' ');
+  };
+
+
   const formattedTime = (secs: number) => {
     const mm = Math.floor(secs / 60).toString().padStart(2, '0');
     const ss = (secs % 60).toString().padStart(2, '0');
@@ -427,33 +445,50 @@ export default function ScanScreen() {
                 <Text style={styles.timerLabel}>{frequency} MHz | {antennaType}</Text>
               </View>
 
-              {/* Radargram Visualization */}
-              <View style={styles.radarGrid}>
-                {radargramData[0].map((_, colIndex) => (
-                  <View key={colIndex} style={styles.radarColumn}>
-                    {radargramData.map((row, rowIndex) => (
-                      <View 
-                        key={rowIndex} 
-                        style={[
-                          styles.radarCell, 
-                          { backgroundColor: getRadarColor(row[colIndex]) }
-                        ]} 
-                      />
-                    ))}
-                  </View>
-                ))}
+              {/* Split-Screen: Vertical A-Scan Signal Area + Radargram Grid */}
+              <View style={{ flexDirection: 'row', height: 180, width: '100%', backgroundColor: '#05070A', borderRadius: 8, overflow: 'hidden' }}>
+                
+                {/* Vertical A-Scan (Wiggle Trace Signal Area) */}
+                <View style={{ width: 60, height: '100%', backgroundColor: '#090D16', borderRightWidth: 1, borderRightColor: '#1F2937', paddingVertical: 2 }}>
+                  <Svg width="100%" height="100%">
+                    <Line x1="30" y1="0" x2="30" y2="180" stroke="#1F2937" strokeWidth="1" strokeDasharray="2 2" />
+                    <Path 
+                      d={getVerticalAScanPath()} 
+                      fill="none" 
+                      stroke="#3B82F6" 
+                      strokeWidth="2" 
+                    />
+                  </Svg>
+                </View>
 
-                {/* Hyperbolic reflection visual markers when target is detected */}
-                {detectedAnomalies.length > 0 && isScanning && (
-                  <View style={styles.hyperbolaOverlay} pointerEvents="none">
-                    <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-                      {/* Highlight last anomaly location */}
-                      <Circle cx="80%" cy="50%" r="5" fill="#EF4444" />
-                      <Path d="M 60% 80% Q 80% 50% 100% 80%" fill="none" stroke="#EF4444" strokeWidth="2" strokeDasharray="4 4" />
-                    </Svg>
-                  </View>
-                )}
+                {/* Radargram Grid (B-Scan) */}
+                <View style={{ flex: 1, flexDirection: 'row', height: '100%', position: 'relative' }}>
+                  {radargramData[0].map((_, colIndex) => (
+                    <View key={colIndex} style={styles.radarColumn}>
+                      {radargramData.map((row, rowIndex) => (
+                        <View 
+                          key={rowIndex} 
+                          style={[
+                            styles.radarCell, 
+                            { backgroundColor: getRadarColor(row[colIndex]) }
+                          ]} 
+                        />
+                      ))}
+                    </View>
+                  ))}
+
+                  {/* Hyperbolic reflection visual markers when target is detected */}
+                  {detectedAnomalies.length > 0 && isScanning && (
+                    <View style={styles.hyperbolaOverlay} pointerEvents="none">
+                      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+                        <Circle cx="80%" cy="50%" r="5" fill="#EF4444" />
+                        <Path d="M 60% 80% Q 80% 50% 100% 80%" fill="none" stroke="#EF4444" strokeWidth="2" strokeDasharray="4 4" />
+                      </Svg>
+                    </View>
+                  )}
+                </View>
               </View>
+
             </View>
 
             {/* Target alerts & list */}
