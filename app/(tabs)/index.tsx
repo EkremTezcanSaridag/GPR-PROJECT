@@ -181,7 +181,7 @@ export default function HomeScreen() {
     diagItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      justify('space-between' as any),
+      justifyContent: 'space-between',
       paddingVertical: 7,
       borderBottomWidth: 1,
       borderBottomColor: isLight ? '#F1F5F9' : '#2D3748',
